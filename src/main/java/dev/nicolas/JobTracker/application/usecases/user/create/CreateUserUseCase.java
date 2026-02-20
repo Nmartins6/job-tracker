@@ -1,7 +1,7 @@
 package dev.nicolas.JobTracker.application.usecases.user.create;
 
-import dev.nicolas.JobTracker.application.usecases.user.dto.CreateUserRequest;
-import dev.nicolas.JobTracker.application.usecases.user.dto.UserResponse;
+import dev.nicolas.JobTracker.application.usecases.user.dto.user.CreateUserRequest;
+import dev.nicolas.JobTracker.application.usecases.user.dto.user.UserResponse;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import dev.nicolas.JobTracker.domain.user.User;
 import dev.nicolas.JobTracker.domain.user.UserRepository;

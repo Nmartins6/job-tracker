@@ -1,4 +1,4 @@
-package dev.nicolas.JobTracker.application.usecases.user.dto;
+package dev.nicolas.JobTracker.application.usecases.user.dto.user;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
