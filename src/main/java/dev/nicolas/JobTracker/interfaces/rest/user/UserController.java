@@ -2,8 +2,8 @@ package dev.nicolas.JobTracker.interfaces.rest.user;
 
 
 import dev.nicolas.JobTracker.application.usecases.user.create.CreateUserUseCase;
-import dev.nicolas.JobTracker.application.usecases.user.dto.user.CreateUserRequest;
-import dev.nicolas.JobTracker.application.usecases.user.dto.user.UserResponse;
+import dev.nicolas.JobTracker.application.dto.user.CreateUserRequest;
+import dev.nicolas.JobTracker.application.dto.user.UserResponse;
 import dev.nicolas.JobTracker.application.usecases.user.get.GetUserUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
