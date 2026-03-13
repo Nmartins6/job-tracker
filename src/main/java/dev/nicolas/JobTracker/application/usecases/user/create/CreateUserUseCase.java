@@ -19,13 +19,15 @@ public class CreateUserUseCase {
 
     @Transactional
     public UserResponse execute(CreateUserRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
-            throw new DomainException("Email já cadastrado: " + request.email());
+        String normalizedEmail = normalizeEmail(request.email());
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new DomainException("Email já cadastrado: " + normalizedEmail);
         }
 
         User user = User.create(
                 request.name(),
-                request.email(),
+                normalizedEmail,
                 request.password(), //TODO: hash with BCrypt?
                 request.headline(),
                 request.location(),
@@ -40,6 +42,10 @@ public class CreateUserUseCase {
                 saved.getHeadLine(),
                 saved.getLocation(),
                 saved.getBio());
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
     }
 
 }
