@@ -2,12 +2,15 @@ package dev.nicolas.JobTracker.interfaces.rest.application;
 
 import dev.nicolas.JobTracker.application.dto.application.ApplicationResponse;
 import dev.nicolas.JobTracker.application.dto.application.CreateApplicationRequest;
+import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationStatusRequest;
 import dev.nicolas.JobTracker.application.usecases.application.create.CreateApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.get.GetApplicationUseCase;
+import dev.nicolas.JobTracker.application.usecases.application.update.UpdateApplicationStatusUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,11 +26,14 @@ public class ApplicationController {
 
     private final CreateApplicationUseCase createApplicationUseCase;
     private final GetApplicationUseCase getApplicationUseCase;
+    private final UpdateApplicationStatusUseCase updateApplicationStatusUseCase;
 
     public ApplicationController(CreateApplicationUseCase createApplicationUseCase,
-                                 GetApplicationUseCase getApplicationUseCase) {
+                                 GetApplicationUseCase getApplicationUseCase,
+                                 UpdateApplicationStatusUseCase updateApplicationStatusUseCase) {
         this.createApplicationUseCase = createApplicationUseCase;
         this.getApplicationUseCase = getApplicationUseCase;
+        this.updateApplicationStatusUseCase = updateApplicationStatusUseCase;
     }
 
     @PostMapping
@@ -44,5 +50,11 @@ public class ApplicationController {
     @GetMapping("/{id}")
     public ResponseEntity<ApplicationResponse> getApplicationById(@PathVariable UUID id) {
         return ResponseEntity.ok(getApplicationUseCase.findById(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ApplicationResponse> updateApplicationStatus(@PathVariable UUID id,
+                                                                       @Valid @RequestBody UpdateApplicationStatusRequest request) {
+        return ResponseEntity.ok(updateApplicationStatusUseCase.execute(id, request));
     }
 }
