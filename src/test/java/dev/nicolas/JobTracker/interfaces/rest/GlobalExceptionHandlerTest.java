@@ -23,6 +23,15 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void shouldReturnNotFoundForFeminineDomainNotFoundErrors() {
+        ResponseEntity<Map<String, Object>> response =
+                handler.handleDomainException(new DomainException("Candidatura não encontrada pelo id 123"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).containsEntry("status", HttpStatus.NOT_FOUND.value());
+    }
+
+    @Test
     void shouldReturnBadRequestForOtherDomainErrors() {
         ResponseEntity<Map<String, Object>> response =
                 handler.handleDomainException(new DomainException("Email já cadastrado"));
