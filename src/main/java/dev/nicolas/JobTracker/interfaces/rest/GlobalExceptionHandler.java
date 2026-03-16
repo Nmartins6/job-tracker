@@ -17,7 +17,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<Map<String, Object>> handleDomainException(DomainException ex) {
-        HttpStatus status = ex.getMessage().contains("não encontrado") ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST;
+        String message = ex.getMessage().toLowerCase();
+        HttpStatus status = message.contains("não encontrado") || message.contains("não encontrada")
+                ? HttpStatus.NOT_FOUND
+                : HttpStatus.BAD_REQUEST;
 
         return ResponseEntity.status(status).body(buildBody(status, "Domain Error", ex.getMessage()));
     }
