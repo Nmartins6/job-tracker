@@ -1,13 +1,18 @@
 package dev.nicolas.JobTracker.interfaces.rest.stage;
 
+import dev.nicolas.JobTracker.application.dto.stage.CompleteStageRequest;
 import dev.nicolas.JobTracker.application.dto.stage.CreateStageRequest;
+import dev.nicolas.JobTracker.application.dto.stage.StartStageRequest;
 import dev.nicolas.JobTracker.application.dto.stage.StageResponse;
+import dev.nicolas.JobTracker.application.usecases.stage.complete.CompleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.create.CreateStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.get.GetStageUseCase;
+import dev.nicolas.JobTracker.application.usecases.stage.start.StartStageUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,10 +28,17 @@ public class StageController {
 
     private final CreateStageUseCase createStageUseCase;
     private final GetStageUseCase getStageUseCase;
+    private final StartStageUseCase startStageUseCase;
+    private final CompleteStageUseCase completeStageUseCase;
 
-    public StageController(CreateStageUseCase createStageUseCase, GetStageUseCase getStageUseCase) {
+    public StageController(CreateStageUseCase createStageUseCase,
+                           GetStageUseCase getStageUseCase,
+                           StartStageUseCase startStageUseCase,
+                           CompleteStageUseCase completeStageUseCase) {
         this.createStageUseCase = createStageUseCase;
         this.getStageUseCase = getStageUseCase;
+        this.startStageUseCase = startStageUseCase;
+        this.completeStageUseCase = completeStageUseCase;
     }
 
     @PostMapping("/stages")
@@ -43,5 +55,17 @@ public class StageController {
     @GetMapping("/applications/{applicationId}/stages")
     public ResponseEntity<List<StageResponse>> getStagesByApplicationId(@PathVariable UUID applicationId) {
         return ResponseEntity.ok(getStageUseCase.findByApplicationId(applicationId));
+    }
+
+    @PatchMapping("/stages/{id}/start")
+    public ResponseEntity<StageResponse> startStage(@PathVariable UUID id,
+                                                    @Valid @RequestBody StartStageRequest request) {
+        return ResponseEntity.ok(startStageUseCase.execute(id, request));
+    }
+
+    @PatchMapping("/stages/{id}/complete")
+    public ResponseEntity<StageResponse> completeStage(@PathVariable UUID id,
+                                                       @Valid @RequestBody CompleteStageRequest request) {
+        return ResponseEntity.ok(completeStageUseCase.execute(id, request));
     }
 }
