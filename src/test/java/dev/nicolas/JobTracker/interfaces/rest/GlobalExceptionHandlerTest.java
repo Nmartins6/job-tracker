@@ -4,6 +4,7 @@ import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 
 import java.util.Map;
 
@@ -38,5 +39,15 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).containsEntry("status", HttpStatus.BAD_REQUEST.value());
+    }
+
+    @Test
+    void shouldReturnBadRequestForMissingRequestParameter() {
+        ResponseEntity<Map<String, Object>> response =
+                handler.handleMissingRequestParameter(new MissingServletRequestParameterException("userId", "UUID"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).containsEntry("status", HttpStatus.BAD_REQUEST.value());
+        assertThat(response.getBody()).containsEntry("error", "Validation Error");
     }
 }
