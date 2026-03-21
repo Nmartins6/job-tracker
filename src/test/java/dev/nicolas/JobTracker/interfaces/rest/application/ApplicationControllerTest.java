@@ -3,8 +3,12 @@ package dev.nicolas.JobTracker.interfaces.rest.application;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.nicolas.JobTracker.application.dto.application.ApplicationResponse;
 import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationStatusRequest;
+import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryEventResponse;
+import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryEventType;
+import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryResponse;
 import dev.nicolas.JobTracker.application.usecases.application.create.CreateApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.get.GetApplicationUseCase;
+import dev.nicolas.JobTracker.application.usecases.application.history.GetApplicationHistoryUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.update.UpdateApplicationStatusUseCase;
 import dev.nicolas.JobTracker.domain.application.ApplicationStatus;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
@@ -18,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +49,9 @@ class ApplicationControllerTest {
 
     @MockitoBean
     private GetApplicationUseCase getApplicationUseCase;
+
+    @MockitoBean
+    private GetApplicationHistoryUseCase getApplicationHistoryUseCase;
 
     @MockitoBean
     private UpdateApplicationStatusUseCase updateApplicationStatusUseCase;
@@ -100,6 +108,44 @@ class ApplicationControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.jobId").value(jobId.toString()));
+    }
+
+    @Test
+    void shouldReturnApplicationHistory() throws Exception {
+        UUID applicationId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        UUID noteId = UUID.randomUUID();
+
+        when(getApplicationHistoryUseCase.execute(applicationId)).thenReturn(
+                new ApplicationHistoryResponse(
+                        applicationId,
+                        List.of(
+                                new ApplicationHistoryEventResponse(
+                                        ApplicationHistoryEventType.NOTE,
+                                        noteId,
+                                        null,
+                                        "Nota da candidatura",
+                                        "Observação inicial",
+                                        LocalDateTime.of(2026, 3, 21, 10, 0)
+                                ),
+                                new ApplicationHistoryEventResponse(
+                                        ApplicationHistoryEventType.STAGE_STARTED,
+                                        stageId,
+                                        stageId,
+                                        "Screening",
+                                        "Etapa iniciada",
+                                        LocalDateTime.of(2026, 3, 21, 11, 0)
+                                )
+                        )
+                )
+        );
+
+        mockMvc.perform(get("/api/v1/applications/{id}/history", applicationId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.applicationId").value(applicationId.toString()))
+                .andExpect(jsonPath("$.events.length()").value(2))
+                .andExpect(jsonPath("$.events[0].type").value("NOTE"))
+                .andExpect(jsonPath("$.events[1].type").value("STAGE_STARTED"));
     }
 
     @Test
