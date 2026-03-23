@@ -7,14 +7,17 @@ import dev.nicolas.JobTracker.domain.user.User;
 import dev.nicolas.JobTracker.domain.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class CreateUserUseCase {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public CreateUserUseCase(UserRepository userRepository) {
+    public CreateUserUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -25,10 +28,12 @@ public class CreateUserUseCase {
             throw new DomainException("Email já cadastrado: " + normalizedEmail);
         }
 
+        String encodedPassword = passwordEncoder.encode(request.password());
+
         User user = User.create(
                 request.name(),
                 normalizedEmail,
-                request.password(), //TODO: hash with BCrypt?
+                encodedPassword,
                 request.headline(),
                 request.location(),
                 request.bio());
