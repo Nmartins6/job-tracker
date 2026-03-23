@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,6 +25,9 @@ class CreateUserUseCaseTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private CreateUserUseCase createUserUseCase;
@@ -40,16 +44,19 @@ class CreateUserUseCaseTest {
         );
 
         when(userRepository.existsByEmail("nicolas@example.com")).thenReturn(false);
+        when(passwordEncoder.encode("123456")).thenReturn("hashed-123456");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserResponse response = createUserUseCase.execute(request);
 
         verify(userRepository).existsByEmail("nicolas@example.com");
+        verify(passwordEncoder).encode("123456");
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
 
         assertThat(userCaptor.getValue().getEmail()).isEqualTo("nicolas@example.com");
+        assertThat(userCaptor.getValue().getPasswordHash()).isEqualTo("hashed-123456");
         assertThat(response.email()).isEqualTo("nicolas@example.com");
     }
 
@@ -70,6 +77,7 @@ class CreateUserUseCaseTest {
                 .isInstanceOf(DomainException.class)
                 .hasMessage("Email já cadastrado: nicolas@example.com");
 
+        verify(passwordEncoder, never()).encode(any());
         verify(userRepository, never()).save(any(User.class));
     }
 }
