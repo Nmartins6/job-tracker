@@ -56,8 +56,13 @@ no dominio.
 - Spring Security
 - H2
 - Maven
+- Angular 19
+- SCSS
+- npm
 
 ## Como executar
+
+### Backend
 
 Executar a aplicacao localmente:
 
@@ -76,6 +81,75 @@ Executar os testes:
 ```bash
 ./mvnw test
 ```
+
+### Frontend Angular
+
+O frontend mora em `frontend/` e foi pensado para melhorar a experiencia local de
+quem clona o projeto.
+
+Requisitos recomendados:
+
+- Node 22 LTS ou superior
+- Google Chrome ou Chromium para a execucao dos testes do Angular
+
+Instalar dependencias:
+
+```bash
+cd frontend
+npm install
+```
+
+Subir o frontend em modo desenvolvimento:
+
+```bash
+npm start
+```
+
+O `ng serve` usa um proxy local para encaminhar `/api` e `/actuator` para o
+backend em `http://localhost:8080`, evitando problemas de CORS durante o
+desenvolvimento.
+
+Build do frontend:
+
+```bash
+npm run build
+```
+
+Testes do frontend:
+
+```bash
+CHROME_BIN=$(which google-chrome || which chromium || which chromium-browser) npm test -- --watch=false --browsers=ChromeHeadless
+```
+
+### Fluxo local completo
+
+Em dois terminais:
+
+Terminal 1:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Terminal 2:
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+Depois abra:
+
+- `http://localhost:4200`
+
+Fluxo sugerido para primeira execucao:
+
+1. criar uma conta pela tela de acesso do frontend
+2. entrar no workspace
+3. cadastrar uma vaga
+4. criar uma candidatura
+5. abrir o detalhe da candidatura e explorar etapas, notas, historico e matching
 
 ## Perfis de configuracao
 
@@ -165,6 +239,21 @@ Analise e feedback:
 - `POST /api/v1/notes`
 - `GET /api/v1/notes/{id}`
 - `GET /api/v1/applications/{applicationId}/notes`
+
+## Frontend atual
+
+O MVP Angular atual cobre:
+
+- autenticacao basica reaproveitando o HTTP Basic do backend
+- criacao de conta e abertura de sessao
+- workspace local para criar vagas e candidaturas
+- listagem de candidaturas
+- tela de detalhe com:
+  - atualizacao de status
+  - etapas
+  - notas
+  - historico consolidado
+  - leitura de matching
 
 ## Observacoes
 
