@@ -1,29 +1,169 @@
 # JobTracker
 
-Backend de um sistema para organizar candidaturas, etapas de processos seletivos,
-feedbacks e aderencia entre habilidades do candidato e requisitos das vagas.
+Backend de um sistema para organizar candidaturas, etapas de processos
+seletivos, feedbacks e aderencia entre habilidades do candidato e requisitos
+das vagas.
+
+O projeto esta sendo construido como laboratorio de boas praticas de backend,
+arquitetura e evolucao profissional, com foco em um fluxo real do ponto de
+vista do candidato.
+
+## Estado atual
+
+Hoje o projeto ja possui:
+
+- cadastro de usuario
+- cadastro de skills e vagas
+- candidaturas (`Application`)
+- etapas do processo seletivo (`Stage`)
+- habilidades do candidato (`UserSkill`)
+- requisitos da vaga (`JobRequirement`)
+- notas e feedbacks (`Note`)
+- historico consolidado da candidatura
+- analise de matching entre perfil e vaga
+- autenticacao minima com HTTP Basic
 
 ## Linguagem de dominio
 
 - `User`: representa o perfil do candidato no sistema.
+- `Skill`: representa uma habilidade conhecida pelo sistema.
+- `UserSkill`: representa uma habilidade do candidato com nivel e tempo de experiencia.
 - `Job`: representa a vaga publicada por uma empresa.
-- `Application`: representara a candidatura feita para uma vaga especifica.
-- `Stage`: representara cada etapa do processo seletivo dentro de uma candidatura.
+- `JobRequirement`: representa um requisito de uma vaga, com nivel desejado, peso e indicacao de `must-have`.
+- `Application`: representa a candidatura feita para uma vaga especifica.
+- `Stage`: representa uma etapa do processo seletivo dentro de uma candidatura.
+- `Note`: representa uma observacao ou feedback vinculado a uma candidatura e, opcionalmente, a uma etapa.
 
-Essas definicoes existem para evitar que `Job` assuma responsabilidades de
-`Application`, ja que a vaga e a candidatura sao conceitos diferentes no dominio.
+Essas definicoes existem para evitar que uma entidade assuma responsabilidades
+que pertencem a outra. Exemplo: `Job` e `Application` sao conceitos diferentes
+no dominio.
 
-## Estrutura atual
+## Estrutura do projeto
 
 - `domain`: entidades e contratos centrais do negocio.
-- `application`: casos de uso e DTOs.
+- `application`: casos de uso, servicos de aplicacao e DTOs.
 - `interfaces`: controllers REST e tratamento de excecoes.
-- `infrastructure`: persistencia JPA, mapeadores e adaptadores.
+- `infrastructure`: persistencia JPA, seguranca, mapeadores e configuracoes.
+
+## Stack
+
+- Java 21
+- Spring Boot 3
+- Spring Web
+- Spring Validation
+- Spring Data JPA
+- Flyway
+- Spring Security
+- H2
+- Maven
+
+## Como executar
+
+Executar a aplicacao localmente:
+
+```bash
+./mvnw spring-boot:run
+```
+
+Executar os testes:
+
+```bash
+./mvnw test
+```
 
 ## Perfis de configuracao
 
-- `dev`: perfil padrao para execucao local com H2 em memoria.
+- `dev`: perfil padrao para execucao local com H2 em memoria e console H2 habilitado.
 - `test`: perfil usado pelos testes automatizados.
 
-O projeto segue com Flyway para versionamento do banco e `ddl-auto=validate`
-para garantir que o mapeamento JPA acompanhe as migrations.
+O projeto usa Flyway para versionamento do banco e `ddl-auto=validate` para
+garantir que o mapeamento JPA acompanhe as migrations.
+
+## Autenticacao
+
+O projeto possui autenticacao minima com HTTP Basic.
+
+Regras atuais:
+
+- `POST /api/v1/users` e publico para permitir criacao de usuario.
+- os demais endpoints exigem autenticacao.
+- as senhas sao persistidas com BCrypt.
+- `GET /api/v1/auth/me` retorna o email do usuario autenticado.
+
+Exemplo de uso:
+
+Criar usuario:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"Nicolas",
+    "email":"nicolas@example.com",
+    "password":"123456",
+    "headline":"Backend Developer",
+    "location":"Brasil",
+    "bio":"Bio"
+  }'
+```
+
+Validar autenticacao:
+
+```bash
+curl -u nicolas@example.com:123456 \
+  http://localhost:8080/api/v1/auth/me
+```
+
+Consumir um endpoint protegido:
+
+```bash
+curl -u nicolas@example.com:123456 \
+  http://localhost:8080/api/v1/applications
+```
+
+## Endpoints principais
+
+Fluxo de usuario:
+
+- `POST /api/v1/users`
+- `GET /api/v1/auth/me`
+
+Fluxo de candidaturas:
+
+- `POST /api/v1/applications`
+- `GET /api/v1/applications`
+- `GET /api/v1/applications/{id}`
+- `PATCH /api/v1/applications/{id}/status`
+- `GET /api/v1/applications/{id}/history`
+
+Fluxo de etapas:
+
+- `POST /api/v1/stages`
+- `GET /api/v1/stages/{id}`
+- `GET /api/v1/applications/{applicationId}/stages`
+- `PATCH /api/v1/stages/{id}/start`
+- `PATCH /api/v1/stages/{id}/complete`
+
+Perfil tecnico e requisitos:
+
+- `POST /api/v1/user-skills`
+- `GET /api/v1/user-skills/{id}`
+- `GET /api/v1/users/{userId}/skills`
+- `POST /api/v1/job-requirements`
+- `GET /api/v1/job-requirements/{id}`
+- `GET /api/v1/jobs/{jobId}/requirements`
+
+Analise e feedback:
+
+- `GET /api/v1/jobs/{jobId}/matching?userId={userId}`
+- `POST /api/v1/notes`
+- `GET /api/v1/notes/{id}`
+- `GET /api/v1/applications/{applicationId}/notes`
+
+## Observacoes
+
+- Em `dev`, a aplicacao usa H2 em memoria.
+- A seguranca fica habilitada por padrao durante a execucao normal.
+- Nos testes, a propriedade `jobtracker.security.enabled=false` e usada para
+  manter os testes de controller focados no contrato HTTP, enquanto os cenarios
+  de autenticacao ficam cobertos por testes de integracao especificos.
