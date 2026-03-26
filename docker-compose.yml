@@ -1,10 +1,14 @@
 services:
   postgres:
     image: postgres:16-alpine
+    # TODO: mover credenciais de exemplo para variaveis externas (.env) antes de usar
+    # qualquer ambiente compartilhado ou de deploy.
     environment:
       POSTGRES_DB: jobtracker
       POSTGRES_USER: jobtracker
       POSTGRES_PASSWORD: jobtracker
+    # TODO: remover a exposicao da porta 5432 quando o banco precisar ser acessado
+    # apenas pela aplicacao dentro da rede do compose.
     ports:
       - "5432:5432"
     volumes:
@@ -18,6 +22,8 @@ services:
   app:
     build:
       context: .
+    # TODO: substituir credenciais versionadas por variaveis externas/seguras em
+    # ambientes reais de deploy.
     environment:
       SPRING_PROFILES_ACTIVE: prod
       DB_HOST: postgres
