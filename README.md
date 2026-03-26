@@ -65,6 +65,12 @@ Executar a aplicacao localmente:
 ./mvnw spring-boot:run
 ```
 
+Executar a aplicacao com Docker Compose:
+
+```bash
+docker compose up --build
+```
+
 Executar os testes:
 
 ```bash
