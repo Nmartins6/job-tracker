@@ -167,3 +167,9 @@ Analise e feedback:
 - Nos testes, a propriedade `jobtracker.security.enabled=false` e usada para
   manter os testes de controller focados no contrato HTTP, enquanto os cenarios
   de autenticacao ficam cobertos por testes de integracao especificos.
+
+## TODOs de containerizacao
+
+- mover credenciais de exemplo do `docker-compose.yml` para variaveis externas, como `.env`, antes de qualquer uso fora do ambiente local
+- evitar expor `5432:5432` quando apenas a aplicacao precisar acessar o banco
+- usar credenciais diferentes das de desenvolvimento em qualquer ambiente publicado
