@@ -4,12 +4,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Entity
-@Table(name= "users")
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -38,5 +42,4 @@ public class UserJpaEntity {
 
     @Column(columnDefinition = "TEXT")
     private String bio;
-
 }
