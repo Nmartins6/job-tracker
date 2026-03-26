@@ -1,0 +1,137 @@
+<section class="page stack">
+  <div class="hero">
+    <span class="eyebrow">Angular MVP</span>
+    <h1>Faça o backend ganhar cara de produto</h1>
+    <p>
+      Esta interface foi pensada para rodar localmente com o Spring Boot e reduzir o
+      atrito de quem clona o projeto. Primeiro crie uma conta ou autentique-se com
+      HTTP Basic, depois siga para o workspace.
+    </p>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="message message-error">{{ errorMessage() }}</div>
+  }
+
+  @if (successMessage()) {
+    <div class="message message-success">{{ successMessage() }}</div>
+  }
+
+  <div class="section-grid">
+    <article class="panel stack" style="grid-column: span 6">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Entrar com uma conta existente</h2>
+          <p class="panel-subtitle">
+            O login usa a mesma autenticação HTTP Basic que protege a API.
+          </p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="loginForm" (ngSubmit)="submitLogin()">
+        <div class="field-group">
+          <label for="login-email">Email</label>
+          <input class="field" id="login-email" type="email" formControlName="email" />
+        </div>
+
+        <div class="field-group">
+          <label for="login-password">Senha</label>
+          <input
+            class="field"
+            id="login-password"
+            type="password"
+            formControlName="password"
+          />
+        </div>
+
+        <div class="button-row">
+          <button class="button" type="submit" [disabled]="loginPending()">
+            {{ loginPending() ? 'Validando...' : 'Entrar no workspace' }}
+          </button>
+        </div>
+      </form>
+    </article>
+
+    <article class="panel stack" style="grid-column: span 6">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Criar conta de teste</h2>
+          <p class="panel-subtitle">
+            Se o banco estiver vazio, esta é a forma mais rápida de começar a explorar.
+          </p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="signUpForm" (ngSubmit)="submitSignUp()">
+        <div class="grid-two">
+          <div class="field-group">
+            <label for="signup-name">Nome</label>
+            <input class="field" id="signup-name" type="text" formControlName="name" />
+          </div>
+
+          <div class="field-group">
+            <label for="signup-email">Email</label>
+            <input
+              class="field"
+              id="signup-email"
+              type="email"
+              formControlName="email"
+            />
+          </div>
+        </div>
+
+        <div class="grid-two">
+          <div class="field-group">
+            <label for="signup-password">Senha</label>
+            <input
+              class="field"
+              id="signup-password"
+              type="password"
+              formControlName="password"
+            />
+          </div>
+
+          <div class="field-group">
+            <label for="signup-headline">Headline</label>
+            <input
+              class="field"
+              id="signup-headline"
+              type="text"
+              formControlName="headline"
+            />
+          </div>
+        </div>
+
+        <div class="grid-two">
+          <div class="field-group">
+            <label for="signup-location">Localização</label>
+            <input
+              class="field"
+              id="signup-location"
+              type="text"
+              formControlName="location"
+            />
+          </div>
+
+          <div class="field-group">
+            <label for="signup-bio">Bio curta</label>
+            <input class="field" id="signup-bio" type="text" formControlName="bio" />
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button class="button" type="submit" [disabled]="signUpPending()">
+            {{ signUpPending() ? 'Criando conta...' : 'Criar conta e entrar' }}
+          </button>
+        </div>
+      </form>
+    </article>
+  </div>
+
+  @if (alreadyAuthenticated()) {
+    <div class="message message-info">
+      Já existe uma sessão local ativa para <strong>{{ auth.email() }}</strong>.
+      <a routerLink="/workspace">Abrir workspace</a>
+    </div>
+  }
+</section>

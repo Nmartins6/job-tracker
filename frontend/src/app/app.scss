@@ -1,0 +1,133 @@
+:host {
+  display: block;
+  min-height: 100dvh;
+}
+
+.shell {
+  min-height: 100dvh;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(88, 68, 44, 0.12);
+  backdrop-filter: blur(18px);
+  background:
+    linear-gradient(135deg, rgba(254, 248, 238, 0.88), rgba(245, 237, 223, 0.76));
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--ink-strong);
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(186, 97, 54, 0.28);
+}
+
+.brand-copy strong,
+.brand-copy span {
+  display: block;
+}
+
+.brand-copy strong {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.brand-copy span {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.topbar-nav a {
+  padding: 0.65rem 0.9rem;
+  border-radius: 999px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.topbar-nav a:hover,
+.topbar-nav a.active {
+  background: rgba(186, 97, 54, 0.12);
+  color: var(--ink-strong);
+  transform: translateY(-1px);
+}
+
+.topbar-account {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.account-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(9, 101, 95, 0.08);
+  color: var(--ink-strong);
+  font-size: 0.92rem;
+}
+
+.status-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 0 0.3rem rgba(50, 127, 80, 0.16);
+}
+
+.content {
+  padding: 2rem 1.5rem 3rem;
+}
+
+@media (max-width: 900px) {
+  .topbar {
+    flex-wrap: wrap;
+  }
+
+  .topbar-nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .topbar-account {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .content {
+    padding-inline: 1rem;
+  }
+}

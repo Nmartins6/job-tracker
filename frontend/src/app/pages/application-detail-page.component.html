@@ -1,0 +1,240 @@
+<section class="page stack">
+  <div class="button-row">
+    <a class="button button-secondary" routerLink="/workspace">Voltar ao workspace</a>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="message message-error">{{ errorMessage() }}</div>
+  }
+
+  @if (successMessage()) {
+    <div class="message message-success">{{ successMessage() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="panel empty-state">Carregando a candidatura, o histórico e a análise de aderência...</div>
+  } @else if (application()) {
+    <div class="hero">
+      <span class="eyebrow">Candidatura</span>
+      <div class="split">
+        <div>
+          <h1>{{ job()?.title || 'Vaga sem título' }}</h1>
+          <p>{{ job()?.company || 'Empresa não informada' }}</p>
+        </div>
+
+        <span [class]="statusClass(application()!.status)">
+          {{ application()!.status }}
+        </span>
+      </div>
+
+      <div class="button-row muted">
+        <span>Application ID: {{ application()!.id }}</span>
+        <span>User ID: {{ application()!.userId }}</span>
+        <span>Job ID: {{ application()!.jobId }}</span>
+      </div>
+    </div>
+
+    <div class="section-grid">
+      <article class="panel stack" style="grid-column: span 4">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Status e aderência</h2>
+            <p class="panel-subtitle">Atualize o macro status e leia o matching calculado pelo backend.</p>
+          </div>
+        </div>
+
+        <form class="stack" [formGroup]="statusForm" (ngSubmit)="updateStatus()">
+          <div class="field-group">
+            <label for="status">Status</label>
+            <select class="select" id="status" formControlName="status">
+              @for (status of statusOptions; track status) {
+                <option [value]="status">{{ status }}</option>
+              }
+            </select>
+          </div>
+
+          <button class="button" type="submit" [disabled]="isSubmitting()">
+            Atualizar status
+          </button>
+        </form>
+
+        @if (matching()) {
+          <div class="split">
+            <div class="score-ring" [style.--score]="scoreStyle()">
+              <div>
+                <strong>{{ matching()!.score }}%</strong>
+                <span>score</span>
+              </div>
+            </div>
+
+            <div class="stack" style="flex: 1">
+              <div class="list-item">
+                <strong>{{ matching()!.metRequirements }}</strong>
+                <p class="muted">requisitos atendidos</p>
+              </div>
+              <div class="list-item">
+                <strong>{{ matching()!.mustHaveUnmetRequirements }}</strong>
+                <p class="muted">must-have pendentes</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="list">
+            @for (requirement of matching()!.requirements; track requirement.skillId) {
+              <div class="list-item">
+                <div class="split">
+                  <strong>Skill {{ requirement.skillId.slice(0, 8) }}</strong>
+                  <span [class]="requirement.met ? 'status-pill status-hired' : 'status-pill status-rejected'">
+                    {{ requirement.met ? 'Atendida' : 'Gap' }}
+                  </span>
+                </div>
+                <p class="muted">
+                  Nivel desejado: {{ requirement.desiredLevel }} · Nivel do candidato:
+                  {{ requirement.candidateLevel ?? 'n/a' }} · Gap:
+                  {{ requirement.gapLevel }}
+                </p>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel stack" style="grid-column: span 4">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Etapas</h2>
+            <p class="panel-subtitle">Crie novas etapas e marque o andamento real do processo.</p>
+          </div>
+        </div>
+
+        <form class="stack" [formGroup]="stageForm" (ngSubmit)="createStage()">
+          <div class="field-group">
+            <label for="stage-name">Nome da etapa</label>
+            <input class="field" id="stage-name" type="text" formControlName="name" />
+          </div>
+
+          <div class="grid-two">
+            <div class="field-group">
+              <label for="stage-order">Ordem</label>
+              <input class="field" id="stage-order" type="number" formControlName="orderIndex" />
+            </div>
+
+            <div class="field-group">
+              <label for="stage-deadline">Prazo</label>
+              <input class="field" id="stage-deadline" type="datetime-local" formControlName="deadlineAt" />
+            </div>
+          </div>
+
+          <button class="button" type="submit" [disabled]="isSubmitting()">Adicionar etapa</button>
+        </form>
+
+        @if (sortedStages().length === 0) {
+          <div class="empty-state">Nenhuma etapa criada ainda.</div>
+        } @else {
+          <div class="list">
+            @for (stage of sortedStages(); track stage.id) {
+              <div class="list-item stack">
+                <div class="split">
+                  <strong>#{{ stage.orderIndex }} · {{ stage.name }}</strong>
+                  <span class="muted">{{ stage.id.slice(0, 8) }}</span>
+                </div>
+                <p class="muted">
+                  Início: {{ stage.startedAt ? (stage.startedAt | date: 'short') : 'não iniciado' }}
+                  · Conclusão:
+                  {{ stage.completedAt ? (stage.completedAt | date: 'short') : 'pendente' }}
+                </p>
+                <div class="button-row">
+                  <button
+                    class="button button-secondary"
+                    type="button"
+                    [disabled]="isSubmitting() || !!stage.startedAt"
+                    (click)="startStage(stage.id)"
+                  >
+                    Iniciar
+                  </button>
+                  <button
+                    class="button button-secondary"
+                    type="button"
+                    [disabled]="isSubmitting() || !stage.startedAt || !!stage.completedAt"
+                    (click)="completeStage(stage.id)"
+                  >
+                    Concluir
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel stack" style="grid-column: span 4">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Notas</h2>
+            <p class="panel-subtitle">Registre observações rápidas ou vincule a uma etapa específica.</p>
+          </div>
+        </div>
+
+        <form class="stack" [formGroup]="noteForm" (ngSubmit)="createNote()">
+          <div class="field-group">
+            <label for="note-stage">Etapa vinculada</label>
+            <select class="select" id="note-stage" formControlName="stageId">
+              <option value="">Sem etapa vinculada</option>
+              @for (stage of sortedStages(); track stage.id) {
+                <option [value]="stage.id">{{ stage.orderIndex }} · {{ stage.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="note-content">Conteúdo</label>
+            <textarea class="textarea" id="note-content" formControlName="content"></textarea>
+          </div>
+
+          <button class="button" type="submit" [disabled]="isSubmitting()">Adicionar nota</button>
+        </form>
+
+        @if (notes().length === 0) {
+          <div class="empty-state">Nenhuma nota registrada ainda.</div>
+        } @else {
+          <div class="list">
+            @for (note of notes(); track note.id) {
+              <div class="list-item stack">
+                <div class="split">
+                  <strong>{{ note.stageId ? 'Nota vinculada a etapa' : 'Nota geral' }}</strong>
+                  <span class="muted">{{ note.createdAt | date: 'short' }}</span>
+                </div>
+                <p>{{ note.content }}</p>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    </div>
+
+    <article class="panel stack">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Histórico consolidado</h2>
+          <p class="panel-subtitle">Timeline unificada de eventos, notas e mudanças de etapa.</p>
+        </div>
+      </div>
+
+      @if (history().length === 0) {
+        <div class="empty-state">O histórico ainda está vazio.</div>
+      } @else {
+        <div class="timeline">
+          @for (event of history(); track event.referenceId) {
+            <div class="timeline-item">
+              <div class="split">
+                <strong>{{ eventLabel(event) }} · {{ event.title }}</strong>
+                <span class="muted">{{ event.occurredAt | date: 'short' }}</span>
+              </div>
+              <p class="muted">{{ event.description }}</p>
+            </div>
+          }
+        </div>
+      }
+    </article>
+  }
+</section>

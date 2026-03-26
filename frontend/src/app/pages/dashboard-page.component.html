@@ -1,0 +1,213 @@
+<section class="page stack">
+  <div class="hero">
+    <span class="eyebrow">Workspace</span>
+    <h1>Monte um fluxo local que conte a história do projeto</h1>
+    <p>
+      O frontend conversa direto com o backend via proxy local. Aqui você consegue
+      cadastrar vagas, criar candidaturas e navegar pelos fluxos mais importantes sem
+      depender de Postman ou de um deploy pago.
+    </p>
+  </div>
+
+  @if (errorMessage()) {
+    <div class="message message-error">{{ errorMessage() }}</div>
+  }
+
+  @if (successMessage()) {
+    <div class="message message-success">{{ successMessage() }}</div>
+  }
+
+  <div class="metrics">
+    <div class="metric-card">
+      <span class="muted">Candidaturas rastreadas</span>
+      <strong>{{ metrics().totalApplications }}</strong>
+    </div>
+    <div class="metric-card">
+      <span class="muted">Candidaturas ativas</span>
+      <strong>{{ metrics().activeApplications }}</strong>
+    </div>
+    <div class="metric-card">
+      <span class="muted">Vagas registradas</span>
+      <strong>{{ metrics().totalJobs }}</strong>
+    </div>
+    <div class="metric-card">
+      <span class="muted">UserId conhecido</span>
+      <strong>{{ metrics().trackedUserId ? 'Sim' : 'Parcial' }}</strong>
+    </div>
+  </div>
+
+  @if (knownUserId()) {
+    <div class="message message-info">
+      Este navegador conhece o seu userId atual, então a criação de candidaturas já
+      fica mais fluida.
+    </div>
+  } @else {
+    <div class="message message-info">
+      Se você entrou com uma conta antiga, o frontend ainda não conhece o seu userId.
+      Você pode informar o id manualmente ao criar a candidatura ou criar uma conta nova
+      pelo fluxo do próprio app.
+    </div>
+  }
+
+  <div class="section-grid">
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Nova vaga</h2>
+          <p class="panel-subtitle">Uma forma rápida de popular o catálogo local.</p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="createJobForm" (ngSubmit)="submitJob()">
+        <div class="field-group">
+          <label for="job-company">Empresa</label>
+          <input class="field" id="job-company" type="text" formControlName="company" />
+        </div>
+
+        <div class="field-group">
+          <label for="job-title">Título</label>
+          <input class="field" id="job-title" type="text" formControlName="title" />
+        </div>
+
+        <div class="grid-two">
+          <div class="field-group">
+            <label for="job-seniority">Senioridade</label>
+            <input class="field" id="job-seniority" type="text" formControlName="seniority" />
+          </div>
+
+          <div class="field-group">
+            <label for="job-location">Localização</label>
+            <input class="field" id="job-location" type="text" formControlName="location" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label for="job-url">URL de origem</label>
+          <input class="field" id="job-url" type="url" formControlName="sourceUrl" />
+        </div>
+
+        <div class="field-group">
+          <label for="job-description">Descrição</label>
+          <textarea class="textarea" id="job-description" formControlName="description"></textarea>
+        </div>
+
+        <button class="button" type="submit" [disabled]="isCreatingJob()">
+          {{ isCreatingJob() ? 'Criando vaga...' : 'Adicionar vaga' }}
+        </button>
+      </form>
+    </article>
+
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Nova candidatura</h2>
+          <p class="panel-subtitle">
+            Use seu userId conhecido ou informe manualmente quando necessário.
+          </p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="createApplicationForm" (ngSubmit)="submitApplication()">
+        <div class="field-group">
+          <label for="application-job">Vaga</label>
+          <select class="select" id="application-job" formControlName="jobId">
+            <option value="">Selecione uma vaga</option>
+            @for (job of jobs(); track job.id) {
+              <option [value]="job.id">{{ job.company }} · {{ job.title }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label for="application-user">UserId</label>
+          <input
+            class="field"
+            id="application-user"
+            type="text"
+            formControlName="userId"
+            [readonly]="!!knownUserId()"
+          />
+        </div>
+
+        <button class="button" type="submit" [disabled]="isCreatingApplication()">
+          {{ isCreatingApplication() ? 'Criando candidatura...' : 'Criar candidatura' }}
+        </button>
+      </form>
+    </article>
+
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Leitura rápida do backend</h2>
+          <p class="panel-subtitle">
+            O que já está pronto e por que esta UI existe agora.
+          </p>
+        </div>
+      </div>
+
+      <div class="list">
+        <div class="list-item">
+          <strong>Auth mínima</strong>
+          <p class="muted">O frontend reusa o HTTP Basic do backend sem inventar um token novo.</p>
+        </div>
+        <div class="list-item">
+          <strong>Proxy local</strong>
+          <p class="muted">`ng serve` fala com `localhost:8080` sem dor de cabeça com CORS.</p>
+        </div>
+        <div class="list-item">
+          <strong>Fluxo mais vendável</strong>
+          <p class="muted">Candidaturas, histórico, notas, etapas e matching ficam visíveis num só lugar.</p>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <article class="panel stack">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Candidaturas disponíveis</h2>
+        <p class="panel-subtitle">
+          Selecione uma candidatura para abrir histórico, notas, etapas e aderência.
+        </p>
+      </div>
+
+      <button class="button button-secondary" type="button" (click)="loadWorkspace()">
+        Atualizar
+      </button>
+    </div>
+
+    @if (isLoading()) {
+      <div class="empty-state">Carregando candidaturas e vagas cadastradas...</div>
+    } @else if (applicationCards().length === 0) {
+      <div class="empty-state">
+        Ainda não há candidaturas. Crie uma vaga e depois registre sua primeira
+        candidatura para ver o fluxo completo.
+      </div>
+    } @else {
+      <div class="grid-three">
+        @for (application of applicationCards(); track application.id) {
+          <a class="card-link" [routerLink]="['/applications', application.id]">
+            <article class="panel application-card stack">
+              <div class="split">
+                <span [class]="statusClass(application.status)">
+                  {{ application.status }}
+                </span>
+                <span class="muted">{{ application.id.slice(0, 8) }}</span>
+              </div>
+
+              <div>
+                <h3 class="panel-title">{{ application.title }}</h3>
+                <p class="panel-subtitle">{{ application.company }}</p>
+              </div>
+
+              <div class="split muted">
+                <span>{{ application.seniority || 'Senioridade não informada' }}</span>
+                <span>{{ application.location || 'Local não informado' }}</span>
+              </div>
+            </article>
+          </a>
+        }
+      </div>
+    }
+  </article>
+</section>
