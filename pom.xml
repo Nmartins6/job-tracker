@@ -79,14 +79,12 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- PROVISORIO -->
-		<!-- Driver do H2 para execução local/testes -->
+		<!-- Driver do H2 para execucao local e testes -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>runtime</scope>
 		</dependency>
-		<!-- PROVISORIO -->
 	</dependencies>
 
 	<build>
