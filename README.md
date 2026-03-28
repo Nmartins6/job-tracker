@@ -76,6 +76,9 @@ Executar a aplicacao com Docker Compose:
 docker compose up --build
 ```
 
+Esse fluxo sobe o backend e o banco local. O frontend Angular continua sendo
+executado separadamente em `frontend/`.
+
 Executar os testes:
 
 ```bash
@@ -89,7 +92,7 @@ quem clona o projeto.
 
 Requisitos recomendados:
 
-- Node 22 LTS ou superior
+- Node 22 LTS recomendado
 - Google Chrome ou Chromium para a execucao dos testes do Angular
 
 Instalar dependencias:
@@ -148,8 +151,9 @@ Fluxo sugerido para primeira execucao:
 1. criar uma conta pela tela de acesso do frontend
 2. entrar no workspace
 3. cadastrar uma vaga
-4. criar uma candidatura
-5. abrir o detalhe da candidatura e explorar etapas, notas, historico e matching
+4. vincular suas principais skills ao perfil
+5. criar uma candidatura
+6. abrir o detalhe da candidatura e explorar etapas, notas, requisitos e matching
 
 ## Perfis de configuracao
 
@@ -168,7 +172,7 @@ Regras atuais:
 - `POST /api/v1/users` e publico para permitir criacao de usuario.
 - os demais endpoints exigem autenticacao.
 - as senhas sao persistidas com BCrypt.
-- `GET /api/v1/auth/me` retorna o email do usuario autenticado.
+- `GET /api/v1/auth/me` retorna `id`, `name` e `email` do usuario autenticado.
 
 Exemplo de uso:
 
@@ -192,6 +196,16 @@ Validar autenticacao:
 ```bash
 curl -u nicolas@example.com:123456 \
   http://localhost:8080/api/v1/auth/me
+```
+
+Resposta esperada:
+
+```json
+{
+  "id": "uuid-do-usuario",
+  "name": "Nicolas",
+  "email": "nicolas@example.com"
+}
 ```
 
 Consumir um endpoint protegido:
@@ -223,6 +237,7 @@ Fluxo de etapas:
 - `GET /api/v1/applications/{applicationId}/stages`
 - `PATCH /api/v1/stages/{id}/start`
 - `PATCH /api/v1/stages/{id}/complete`
+- `DELETE /api/v1/stages/{id}`
 
 Perfil tecnico e requisitos:
 
@@ -232,6 +247,7 @@ Perfil tecnico e requisitos:
 - `POST /api/v1/job-requirements`
 - `GET /api/v1/job-requirements/{id}`
 - `GET /api/v1/jobs/{jobId}/requirements`
+- `DELETE /api/v1/job-requirements/{id}`
 
 Analise e feedback:
 
@@ -239,6 +255,7 @@ Analise e feedback:
 - `POST /api/v1/notes`
 - `GET /api/v1/notes/{id}`
 - `GET /api/v1/applications/{applicationId}/notes`
+- `DELETE /api/v1/notes/{id}`
 
 ## Frontend atual
 
@@ -246,14 +263,17 @@ O MVP Angular atual cobre:
 
 - autenticacao basica reaproveitando o HTTP Basic do backend
 - criacao de conta e abertura de sessao
-- workspace local para criar vagas e candidaturas
-- listagem de candidaturas
+- workspace local para criar vagas, skills, skills do usuario e candidaturas
+- listagem de candidaturas com filtros por empresa e status
+- leitura de prioridades no dashboard com prazos e proximos passos
 - tela de detalhe com:
   - atualizacao de status
+  - requisitos da vaga
   - etapas
   - notas
   - historico consolidado
   - leitura de matching
+  - remocao de requisito, nota e etapa
 
 ## Observacoes
 
