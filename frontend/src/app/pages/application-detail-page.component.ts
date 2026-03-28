@@ -76,6 +76,72 @@ export class ApplicationDetailPageComponent {
     return `${Math.max(score, 0)}%`;
   });
 
+  protected readonly prioritizedMatchingRequirements = computed(() => {
+    const requirements = this.matching()?.requirements ?? [];
+
+    return [...requirements].sort((left, right) => {
+      if (left.met !== right.met) {
+        return left.met ? 1 : -1;
+      }
+
+      if (left.mustHave !== right.mustHave) {
+        return left.mustHave ? -1 : 1;
+      }
+
+      return right.gapLevel - left.gapLevel || right.weight - left.weight;
+    });
+  });
+
+  protected readonly recommendedFocusRequirements = computed(() =>
+    this.prioritizedMatchingRequirements()
+      .filter((requirement) => !requirement.met)
+      .slice(0, 3),
+  );
+
+  protected readonly readinessHeadline = computed(() => {
+    const matching = this.matching();
+
+    if (!matching) {
+      return '';
+    }
+
+    if (matching.mustHaveUnmetRequirements > 0) {
+      return 'Existem must-haves pendentes';
+    }
+
+    if (matching.score >= 80) {
+      return 'Aderencia forte para esta vaga';
+    }
+
+    if (matching.score >= 60) {
+      return 'Boa base, mas ainda ha gaps importantes';
+    }
+
+    return 'A vaga ainda pede reforco em pontos-chave';
+  });
+
+  protected readonly readinessMessage = computed(() => {
+    const matching = this.matching();
+
+    if (!matching) {
+      return '';
+    }
+
+    if (matching.mustHaveUnmetRequirements > 0) {
+      return 'Priorize primeiro os requisitos obrigatorios ainda nao atendidos, porque eles costumam pesar mais na triagem.';
+    }
+
+    if (matching.score >= 80) {
+      return 'Seu perfil ja cobre boa parte da vaga. Agora vale acompanhar as etapas e manter o historico organizado.';
+    }
+
+    if (matching.score >= 60) {
+      return 'A oportunidade ainda faz sentido, mas ha alguns pontos de estudo ou adaptacao de curriculo para observar.';
+    }
+
+    return 'Use os gaps para decidir se vale insistir nesta vaga agora ou focar em oportunidades mais aderentes.';
+  });
+
   protected readonly sortedRequirements = computed(() =>
     [...this.jobRequirements()].sort((left, right) => {
       if (left.mustHave !== right.mustHave) {
@@ -300,6 +366,52 @@ export class ApplicationDetailPageComponent {
   protected requirementLabel(skillId: UUID): string {
     const skill = this.skills().find((item) => item.id === skillId);
     return skill ? skill.name : `Skill ${skillId.slice(0, 8)}`;
+  }
+
+  protected requirementGapTone(requirement: JobMatchingResponse['requirements'][number]): string {
+    if (requirement.met) {
+      return 'tag-success';
+    }
+
+    if (requirement.mustHave || requirement.gapLevel >= 2) {
+      return 'tag-danger';
+    }
+
+    return 'tag-warning';
+  }
+
+  protected requirementGapLabel(requirement: JobMatchingResponse['requirements'][number]): string {
+    if (requirement.met) {
+      return 'Atendida';
+    }
+
+    if (requirement.gapLevel >= 3) {
+      return 'Gap alto';
+    }
+
+    if (requirement.gapLevel === 2) {
+      return 'Gap moderado';
+    }
+
+    return 'Gap leve';
+  }
+
+  protected readinessClass(): string {
+    const matching = this.matching();
+
+    if (!matching) {
+      return 'message message-info';
+    }
+
+    if (matching.mustHaveUnmetRequirements > 0) {
+      return 'message message-error';
+    }
+
+    if (matching.score >= 80) {
+      return 'message message-success';
+    }
+
+    return 'message message-info';
   }
 
   private runMutation(

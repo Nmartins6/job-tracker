@@ -6,6 +6,7 @@ import { forkJoin, of } from 'rxjs';
 import { toErrorMessage } from '../core/api/error.utils';
 import { JobTrackerApiService } from '../core/api/job-tracker-api.service';
 import {
+  ApplicationStatus,
   ApplicationResponse,
   CreateApplicationRequest,
   CreateJobRequest,
@@ -52,6 +53,10 @@ export class DashboardPageComponent {
 
   protected readonly successMessage = signal<string | null>(null);
 
+  protected readonly companyFilter = signal('');
+
+  protected readonly statusFilter = signal<ApplicationStatus | ''>('');
+
   protected readonly jobs = signal<JobResponse[]>([]);
 
   protected readonly skills = signal<SkillResponse[]>([]);
@@ -63,6 +68,13 @@ export class DashboardPageComponent {
   protected readonly knownUserId = computed(() => this.auth.knownUserId());
 
   protected readonly levelOptions = [1, 2, 3, 4, 5];
+
+  protected readonly statusOptions: ApplicationStatus[] = [
+    'ACTIVE',
+    'HIRED',
+    'REJECTED',
+    'WITHDRAWN',
+  ];
 
   protected readonly applicationCards = computed<ApplicationCard[]>(() => {
     const jobsById = new Map(this.jobs().map((job) => [job.id, job]));
@@ -95,6 +107,31 @@ export class DashboardPageComponent {
       })
       .sort((left, right) => right.level - left.level || left.skillName.localeCompare(right.skillName));
   });
+
+  protected readonly companyOptions = computed(() =>
+    [...new Set(this.jobs().map((job) => job.company).filter((company) => company.trim().length > 0))].sort(
+      (left, right) => left.localeCompare(right),
+    ),
+  );
+
+  protected readonly filteredApplicationCards = computed(() => {
+    const companyFilter = this.companyFilter().trim().toLowerCase();
+    const statusFilter = this.statusFilter();
+
+    return this.applicationCards().filter((application) => {
+      const companyMatches = !companyFilter
+        ? true
+        : application.company.trim().toLowerCase() === companyFilter;
+
+      const statusMatches = !statusFilter ? true : application.status === statusFilter;
+
+      return companyMatches && statusMatches;
+    });
+  });
+
+  protected readonly hasActiveFilters = computed(
+    () => this.companyFilter().length > 0 || this.statusFilter().length > 0,
+  );
 
   protected readonly metrics = computed(() => {
     const applications = this.applications();
@@ -315,5 +352,18 @@ export class DashboardPageComponent {
 
   protected statusClass(status: string): string {
     return `status-pill status-${status.toLowerCase()}`;
+  }
+
+  protected updateCompanyFilter(value: string): void {
+    this.companyFilter.set(value);
+  }
+
+  protected updateStatusFilter(value: string): void {
+    this.statusFilter.set((value as ApplicationStatus | '') ?? '');
+  }
+
+  protected clearFilters(): void {
+    this.companyFilter.set('');
+    this.statusFilter.set('');
   }
 }

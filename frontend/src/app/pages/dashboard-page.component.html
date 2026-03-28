@@ -312,6 +312,54 @@
       </button>
     </div>
 
+    <div class="filter-bar">
+      <div class="field-group">
+        <label for="filter-company">Empresa</label>
+        <select
+          class="select"
+          id="filter-company"
+          [value]="companyFilter()"
+          (change)="updateCompanyFilter($any($event.target).value)"
+        >
+          <option value="">Todas</option>
+          @for (company of companyOptions(); track company) {
+            <option [value]="company">{{ company }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="filter-status">Status</label>
+        <select
+          class="select"
+          id="filter-status"
+          [value]="statusFilter()"
+          (change)="updateStatusFilter($any($event.target).value)"
+        >
+          <option value="">Todos</option>
+          @for (status of statusOptions; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Resultado</label>
+        <div class="filter-summary">
+          {{ filteredApplicationCards().length }} de {{ applicationCards().length }} candidatura(s)
+        </div>
+      </div>
+
+      @if (hasActiveFilters()) {
+        <div class="field-group">
+          <label>&nbsp;</label>
+          <button class="button button-secondary" type="button" (click)="clearFilters()">
+            Limpar filtros
+          </button>
+        </div>
+      }
+    </div>
+
     @if (isLoading()) {
       <div class="empty-state">Carregando vagas e candidaturas registradas...</div>
     } @else if (applicationCards().length === 0) {
@@ -319,9 +367,13 @@
         Ainda nao ha candidaturas. Cadastre uma vaga e registre a primeira oportunidade
         que voce quer acompanhar.
       </div>
+    } @else if (filteredApplicationCards().length === 0) {
+      <div class="empty-state">
+        Nenhuma candidatura corresponde aos filtros atuais. Ajuste empresa ou status para continuar.
+      </div>
     } @else {
       <div class="grid-three">
-        @for (application of applicationCards(); track application.id) {
+        @for (application of filteredApplicationCards(); track application.id) {
           <a class="card-link" [routerLink]="['/applications', application.id]">
             <article class="panel application-card stack">
               <div class="split">

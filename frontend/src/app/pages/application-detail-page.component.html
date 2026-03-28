@@ -82,19 +82,52 @@
             </div>
           </div>
 
+          <div [class]="readinessClass()">
+            <strong>{{ readinessHeadline() }}</strong>
+            <div>{{ readinessMessage() }}</div>
+          </div>
+
+          @if (recommendedFocusRequirements().length > 0) {
+            <div class="list">
+              @for (requirement of recommendedFocusRequirements(); track requirement.skillId) {
+                <div class="list-item">
+                  <div class="split">
+                    <strong>Foco: {{ requirementLabel(requirement.skillId) }}</strong>
+                    <span class="tag" [class]="requirementGapTone(requirement)">
+                      {{ requirementGapLabel(requirement) }}
+                    </span>
+                  </div>
+                  <p class="muted">
+                    {{ requirement.mustHave ? 'Must-have' : 'Opcional' }} · Peso:
+                    {{ requirement.weight }} · Nivel desejado:
+                    {{ requirement.desiredLevel }}
+                  </p>
+                </div>
+              }
+            </div>
+          }
+
           <div class="list">
-            @for (requirement of matching()!.requirements; track requirement.skillId) {
+            @for (requirement of prioritizedMatchingRequirements(); track requirement.skillId) {
               <div class="list-item">
                 <div class="split">
                   <strong>{{ requirementLabel(requirement.skillId) }}</strong>
-                  <span [class]="requirement.met ? 'status-pill status-hired' : 'status-pill status-rejected'">
-                    {{ requirement.met ? 'Atendida' : 'Gap' }}
-                  </span>
+                  <div class="tag-row">
+                    <span
+                      [class]="requirement.mustHave ? 'status-pill status-active' : 'status-pill status-withdrawn'"
+                    >
+                      {{ requirement.mustHave ? 'Must-have' : 'Opcional' }}
+                    </span>
+                    <span class="tag" [class]="requirementGapTone(requirement)">
+                      {{ requirementGapLabel(requirement) }}
+                    </span>
+                  </div>
                 </div>
                 <p class="muted">
                   Nivel desejado: {{ requirement.desiredLevel }} · Nivel do candidato:
                   {{ requirement.candidateLevel ?? 'n/a' }} · Gap:
-                  {{ requirement.gapLevel }}
+                  {{ requirement.gapLevel }} · Peso:
+                  {{ requirement.weight }}
                 </p>
               </div>
             }
