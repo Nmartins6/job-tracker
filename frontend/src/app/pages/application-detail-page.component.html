@@ -206,9 +206,19 @@
               <div class="list-item">
                 <div class="split">
                   <strong>{{ requirementLabel(requirement.skillId) }}</strong>
-                  <span [class]="requirement.mustHave ? 'status-pill status-active' : 'status-pill status-withdrawn'">
-                    {{ requirement.mustHave ? 'Must-have' : 'Opcional' }}
-                  </span>
+                  <div class="button-row">
+                    <span [class]="requirement.mustHave ? 'status-pill status-active' : 'status-pill status-withdrawn'">
+                      {{ requirement.mustHave ? 'Must-have' : 'Opcional' }}
+                    </span>
+                    <button
+                      class="button button-danger"
+                      type="button"
+                      [disabled]="isSubmitting()"
+                      (click)="deleteRequirement(requirement)"
+                    >
+                      Remover
+                    </button>
+                  </div>
                 </div>
                 <p class="muted">
                   Nivel desejado: {{ requirement.desiredLevel }} · Peso:
@@ -283,6 +293,14 @@
                   >
                     Concluir
                   </button>
+                  <button
+                    class="button button-danger"
+                    type="button"
+                    [disabled]="isSubmitting()"
+                    (click)="deleteStage(stage)"
+                  >
+                    Remover
+                  </button>
                 </div>
               </div>
             }
@@ -326,8 +344,20 @@
             @for (note of notes(); track note.id) {
               <div class="list-item stack">
                 <div class="split">
-                  <strong>{{ note.stageId ? 'Nota vinculada a etapa' : 'Nota geral' }}</strong>
-                  <span class="muted">{{ note.createdAt | date: 'short' }}</span>
+                  <strong>
+                    {{ note.stageId ? stageLabel(note.stageId) : 'Nota geral' }}
+                  </strong>
+                  <div class="button-row">
+                    <span class="muted">{{ note.createdAt | date: 'short' }}</span>
+                    <button
+                      class="button button-danger"
+                      type="button"
+                      [disabled]="isSubmitting()"
+                      (click)="deleteNote(note)"
+                    >
+                      Remover
+                    </button>
+                  </div>
                 </div>
                 <p>{{ note.content }}</p>
               </div>

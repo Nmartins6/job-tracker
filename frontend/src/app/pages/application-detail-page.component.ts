@@ -270,6 +270,19 @@ export class ApplicationDetailPageComponent {
     );
   }
 
+  protected deleteRequirement(requirement: JobRequirementResponse): void {
+    const skillLabel = this.requirementLabel(requirement.skillId);
+
+    if (!window.confirm(`Remover o requisito "${skillLabel}" desta vaga?`)) {
+      return;
+    }
+
+    this.runMutation(
+      this.api.deleteJobRequirement(requirement.id),
+      `Requisito "${skillLabel}" removido da vaga.`,
+    );
+  }
+
   protected updateStatus(): void {
     const application = this.application();
 
@@ -303,6 +316,18 @@ export class ApplicationDetailPageComponent {
     });
   }
 
+  protected deleteNote(note: NoteResponse): void {
+    const targetLabel = note.stageId
+      ? `a nota vinculada a "${this.stageLabel(note.stageId)}"`
+      : 'esta nota geral';
+
+    if (!window.confirm(`Deseja remover ${targetLabel}?`)) {
+      return;
+    }
+
+    this.runMutation(this.api.deleteNote(note.id), 'Nota removida do histórico.');
+  }
+
   protected createStage(): void {
     const application = this.application();
 
@@ -326,6 +351,21 @@ export class ApplicationDetailPageComponent {
         deadlineAt: '',
       });
     });
+  }
+
+  protected deleteStage(stage: StageResponse): void {
+    if (
+      !window.confirm(
+        `Remover a etapa "${stage.name}"? Se ela tiver notas vinculadas, a operação será bloqueada.`,
+      )
+    ) {
+      return;
+    }
+
+    this.runMutation(
+      this.api.deleteStage(stage.id),
+      `Etapa "${stage.name}" removida do processo.`,
+    );
   }
 
   protected startStage(stageId: UUID): void {
@@ -366,6 +406,11 @@ export class ApplicationDetailPageComponent {
   protected requirementLabel(skillId: UUID): string {
     const skill = this.skills().find((item) => item.id === skillId);
     return skill ? skill.name : `Skill ${skillId.slice(0, 8)}`;
+  }
+
+  protected stageLabel(stageId: UUID): string {
+    const stage = this.stages().find((item) => item.id === stageId);
+    return stage ? `${stage.orderIndex} · ${stage.name}` : `Etapa ${stageId.slice(0, 8)}`;
   }
 
   protected requirementGapTone(requirement: JobMatchingResponse['requirements'][number]): string {

@@ -53,6 +53,10 @@ export class JobTrackerApiService {
     );
   }
 
+  deleteJobRequirement(id: UUID): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/job-requirements/${id}`);
+  }
+
   getSkills(): Observable<SkillResponse[]> {
     return this.http.get<SkillResponse[]>(`${this.baseUrl}/skills`);
   }
@@ -112,6 +116,10 @@ export class JobTrackerApiService {
     return this.http.post<StageResponse>(`${this.baseUrl}/stages`, request);
   }
 
+  deleteStage(id: UUID): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/stages/${id}`);
+  }
+
   startStage(id: UUID, request: StartStageRequest): Observable<StageResponse> {
     return this.http.patch<StageResponse>(
       `${this.baseUrl}/stages/${id}/start`,
@@ -137,6 +145,10 @@ export class JobTrackerApiService {
 
   createNote(request: CreateNoteRequest): Observable<NoteResponse> {
     return this.http.post<NoteResponse>(`${this.baseUrl}/notes`, request);
+  }
+
+  deleteNote(id: UUID): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/notes/${id}`);
   }
 
   getMatching(jobId: UUID, userId: UUID): Observable<JobMatchingResponse> {
