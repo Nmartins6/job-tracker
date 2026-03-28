@@ -6,11 +6,13 @@ COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
 
 RUN chmod +x mvnw
-RUN ./mvnw -q -DskipTests dependency:go-offline
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw --batch-mode --no-transfer-progress -DskipTests dependency:go-offline
 
 COPY src ./src
 
-RUN ./mvnw -q -DskipTests package
+RUN --mount=type=cache,target=/root/.m2 \
+    ./mvnw --batch-mode --no-transfer-progress -DskipTests package
 
 FROM eclipse-temurin:21-jre-jammy
 
