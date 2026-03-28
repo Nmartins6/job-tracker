@@ -1,11 +1,11 @@
 <section class="page stack">
   <div class="hero">
-    <span class="eyebrow">Angular MVP</span>
-    <h1>Faça o backend ganhar cara de produto</h1>
+    <span class="eyebrow">Acesso</span>
+    <h1>Entre e acompanhe suas candidaturas sem planilhas paralelas</h1>
     <p>
-      Esta interface foi pensada para rodar localmente com o Spring Boot e reduzir o
-      atrito de quem clona o projeto. Primeiro crie uma conta ou autentique-se com
-      HTTP Basic, depois siga para o workspace.
+      Use esta tela para criar sua conta local ou entrar com um usuario ja cadastrado.
+      Depois disso, voce consegue registrar vagas, abrir candidaturas, acompanhar
+      etapas, anotar feedbacks e consultar aderencia entre seu perfil e cada vaga.
     </p>
   </div>
 
@@ -21,10 +21,8 @@
     <article class="panel stack" style="grid-column: span 6">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Entrar com uma conta existente</h2>
-          <p class="panel-subtitle">
-            O login usa a mesma autenticação HTTP Basic que protege a API.
-          </p>
+          <h2 class="panel-title">Entrar na sua conta</h2>
+          <p class="panel-subtitle">Use o mesmo email e senha cadastrados no backend.</p>
         </div>
       </div>
 
@@ -46,7 +44,7 @@
 
         <div class="button-row">
           <button class="button" type="submit" [disabled]="loginPending()">
-            {{ loginPending() ? 'Validando...' : 'Entrar no workspace' }}
+            {{ loginPending() ? 'Validando acesso...' : 'Entrar no painel' }}
           </button>
         </div>
       </form>
@@ -55,9 +53,10 @@
     <article class="panel stack" style="grid-column: span 6">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Criar conta de teste</h2>
+          <h2 class="panel-title">Criar conta</h2>
           <p class="panel-subtitle">
-            Se o banco estiver vazio, esta é a forma mais rápida de começar a explorar.
+            Se esta e sua primeira vez no projeto, crie seu perfil aqui e ja siga com a
+            sessao aberta.
           </p>
         </div>
       </div>
@@ -92,7 +91,7 @@
           </div>
 
           <div class="field-group">
-            <label for="signup-headline">Headline</label>
+            <label for="signup-headline">Headline profissional</label>
             <input
               class="field"
               id="signup-headline"
@@ -104,7 +103,7 @@
 
         <div class="grid-two">
           <div class="field-group">
-            <label for="signup-location">Localização</label>
+            <label for="signup-location">Localizacao</label>
             <input
               class="field"
               id="signup-location"
@@ -114,14 +113,14 @@
           </div>
 
           <div class="field-group">
-            <label for="signup-bio">Bio curta</label>
+            <label for="signup-bio">Resumo rapido</label>
             <input class="field" id="signup-bio" type="text" formControlName="bio" />
           </div>
         </div>
 
         <div class="button-row">
           <button class="button" type="submit" [disabled]="signUpPending()">
-            {{ signUpPending() ? 'Criando conta...' : 'Criar conta e entrar' }}
+            {{ signUpPending() ? 'Criando conta...' : 'Criar conta e abrir painel' }}
           </button>
         </div>
       </form>
@@ -130,8 +129,8 @@
 
   @if (alreadyAuthenticated()) {
     <div class="message message-info">
-      Já existe uma sessão local ativa para <strong>{{ auth.email() }}</strong>.
-      <a routerLink="/workspace">Abrir workspace</a>
+      Voce ja esta autenticado como <strong>{{ auth.email() }}</strong>.
+      <a routerLink="/workspace">Abrir painel</a>
     </div>
   }
 </section>

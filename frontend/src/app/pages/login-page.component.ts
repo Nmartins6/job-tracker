@@ -63,13 +63,13 @@ export class LoginPageComponent {
     this.authService.login(email, password).subscribe({
       next: () => {
         this.loginPending.set(false);
-        this.successMessage.set('Sessão aberta. Vamos para o workspace.');
+        this.successMessage.set('Sessao aberta. Redirecionando para o seu painel.');
         void this.router.navigateByUrl('/workspace');
       },
       error: (error: unknown) => {
         this.loginPending.set(false);
         this.errorMessage.set(
-          toErrorMessage(error, 'Não foi possível autenticar com a API.'),
+          toErrorMessage(error, 'Nao foi possivel entrar com esta conta.'),
         );
       },
     });
@@ -93,14 +93,14 @@ export class LoginPageComponent {
       next: () => {
         this.signUpPending.set(false);
         this.successMessage.set(
-          'Conta criada e sessão aberta. Agora o frontend já conhece o seu userId.',
+          'Conta criada com sucesso. Agora vamos montar sua base de candidaturas.',
         );
         void this.router.navigateByUrl('/workspace');
       },
       error: (error: unknown) => {
         this.signUpPending.set(false);
         this.errorMessage.set(
-          toErrorMessage(error, 'Não foi possível criar a conta local.'),
+          toErrorMessage(error, 'Nao foi possivel criar sua conta.'),
         );
       },
     });

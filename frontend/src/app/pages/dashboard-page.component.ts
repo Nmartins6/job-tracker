@@ -141,13 +141,13 @@ export class DashboardPageComponent {
           location: '',
           description: '',
         });
-        this.successMessage.set(`Vaga ${job.title} adicionada ao catálogo local.`);
+        this.successMessage.set(`Vaga "${job.title}" registrada com sucesso.`);
         this.loadWorkspace();
       },
       error: (error: unknown) => {
         this.isCreatingJob.set(false);
         this.errorMessage.set(
-          toErrorMessage(error, 'Não foi possível criar a vaga.'),
+          toErrorMessage(error, 'Nao foi possivel registrar a vaga.'),
         );
       },
     });
@@ -178,13 +178,15 @@ export class DashboardPageComponent {
             jobId: '',
             userId: this.knownUserId() ?? this.createApplicationForm.getRawValue().userId,
           });
-          this.successMessage.set('Candidatura criada. Agora ela já aparece na lista.');
+          this.successMessage.set(
+            'Candidatura registrada. Abra o detalhe para acompanhar o andamento.',
+          );
           this.loadWorkspace();
         },
         error: (error: unknown) => {
           this.isCreatingApplication.set(false);
           this.errorMessage.set(
-            toErrorMessage(error, 'Não foi possível criar a candidatura.'),
+            toErrorMessage(error, 'Nao foi possivel registrar a candidatura.'),
           );
         },
       });

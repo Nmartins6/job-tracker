@@ -12,10 +12,10 @@
   }
 
   @if (isLoading()) {
-    <div class="panel empty-state">Carregando a candidatura, o histórico e a análise de aderência...</div>
+    <div class="panel empty-state">Carregando candidatura, etapas, notas, historico e aderencia...</div>
   } @else if (application()) {
     <div class="hero">
-      <span class="eyebrow">Candidatura</span>
+      <span class="eyebrow">Acompanhamento da candidatura</span>
       <div class="split">
         <div>
           <h1>{{ job()?.title || 'Vaga sem título' }}</h1>
@@ -28,9 +28,9 @@
       </div>
 
       <div class="button-row muted">
-        <span>Application ID: {{ application()!.id }}</span>
-        <span>User ID: {{ application()!.userId }}</span>
-        <span>Job ID: {{ application()!.jobId }}</span>
+        <span>Candidatura: {{ application()!.id }}</span>
+        <span>Usuario: {{ application()!.userId }}</span>
+        <span>Vaga: {{ application()!.jobId }}</span>
       </div>
     </div>
 
@@ -39,7 +39,10 @@
         <div class="panel-head">
           <div>
             <h2 class="panel-title">Status e aderência</h2>
-            <p class="panel-subtitle">Atualize o macro status e leia o matching calculado pelo backend.</p>
+            <p class="panel-subtitle">
+              Atualize o status macro e acompanhe a aderencia calculada a partir do
+              seu perfil e dos requisitos da vaga.
+            </p>
           </div>
         </div>
 
@@ -96,6 +99,11 @@
               </div>
             }
           </div>
+        } @else {
+          <div class="empty-state">
+            A aderencia aparece aqui quando o usuario e a vaga ja tiverem skills e
+            requisitos cadastrados.
+          </div>
         }
       </article>
 
@@ -103,7 +111,9 @@
         <div class="panel-head">
           <div>
             <h2 class="panel-title">Etapas</h2>
-            <p class="panel-subtitle">Crie novas etapas e marque o andamento real do processo.</p>
+            <p class="panel-subtitle">
+              Registre entrevista, teste tecnico, retorno, proposta e outras etapas do processo.
+            </p>
           </div>
         </div>
 
@@ -171,7 +181,9 @@
         <div class="panel-head">
           <div>
             <h2 class="panel-title">Notas</h2>
-            <p class="panel-subtitle">Registre observações rápidas ou vincule a uma etapa específica.</p>
+            <p class="panel-subtitle">
+              Guarde feedbacks, links, proximos passos e observacoes vinculadas ou nao a uma etapa.
+            </p>
           </div>
         </div>
 
@@ -216,7 +228,9 @@
       <div class="panel-head">
         <div>
           <h2 class="panel-title">Histórico consolidado</h2>
-          <p class="panel-subtitle">Timeline unificada de eventos, notas e mudanças de etapa.</p>
+          <p class="panel-subtitle">
+            Linha do tempo com tudo o que aconteceu nesta candidatura, em ordem cronologica.
+          </p>
         </div>
       </div>
 
