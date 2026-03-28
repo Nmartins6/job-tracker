@@ -11,4 +11,8 @@ public interface NoteRepository {
     Optional<Note> findById(UUID id);
 
     List<Note> findByApplicationId(UUID applicationId);
+
+    boolean existsByStageId(UUID stageId);
+
+    void deleteById(UUID id);
 }

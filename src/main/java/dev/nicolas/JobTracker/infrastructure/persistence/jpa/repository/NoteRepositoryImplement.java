@@ -39,4 +39,14 @@ public class NoteRepositoryImplement implements NoteRepository {
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public boolean existsByStageId(UUID stageId) {
+        return noteJpaRepository.existsByStageId(stageId);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        noteJpaRepository.deleteById(id);
+    }
 }

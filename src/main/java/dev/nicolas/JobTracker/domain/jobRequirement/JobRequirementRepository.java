@@ -13,4 +13,6 @@ public interface JobRequirementRepository {
     List<JobRequirement> findByJobId(UUID jobId);
 
     Optional<JobRequirement> findByJobIdAndSkillId(UUID jobId, UUID skillId);
+
+    void deleteById(UUID id);
 }

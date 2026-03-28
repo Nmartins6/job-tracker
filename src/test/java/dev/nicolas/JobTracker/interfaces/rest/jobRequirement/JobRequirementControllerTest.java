@@ -2,6 +2,7 @@ package dev.nicolas.JobTracker.interfaces.rest.jobRequirement;
 
 import dev.nicolas.JobTracker.application.dto.jobRequirement.JobRequirementResponse;
 import dev.nicolas.JobTracker.application.usecases.jobRequirement.create.CreateJobRequirementUseCase;
+import dev.nicolas.JobTracker.application.usecases.jobRequirement.delete.DeleteJobRequirementUseCase;
 import dev.nicolas.JobTracker.application.usecases.jobRequirement.get.GetJobRequirementUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import dev.nicolas.JobTracker.interfaces.rest.GlobalExceptionHandler;
@@ -17,8 +18,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,6 +41,9 @@ class JobRequirementControllerTest {
 
     @MockitoBean
     private GetJobRequirementUseCase getJobRequirementUseCase;
+
+    @MockitoBean
+    private DeleteJobRequirementUseCase deleteJobRequirementUseCase;
 
     @Test
     void shouldCreateJobRequirement() throws Exception {
@@ -115,6 +122,28 @@ class JobRequirementControllerTest {
                 .thenThrow(new DomainException("Requisito da vaga não encontrado pelo id " + id));
 
         mockMvc.perform(get("/api/v1/job-requirements/{id}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Domain Error"));
+    }
+
+    @Test
+    void shouldDeleteJobRequirement() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doNothing().when(deleteJobRequirementUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/job-requirements/{id}", id))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeletingUnknownJobRequirement() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doThrow(new DomainException("Requisito da vaga não encontrado pelo id " + id))
+                .when(deleteJobRequirementUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/job-requirements/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Domain Error"));
     }

@@ -6,11 +6,13 @@ import dev.nicolas.JobTracker.application.dto.stage.StartStageRequest;
 import dev.nicolas.JobTracker.application.dto.stage.StageResponse;
 import dev.nicolas.JobTracker.application.usecases.stage.complete.CompleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.create.CreateStageUseCase;
+import dev.nicolas.JobTracker.application.usecases.stage.delete.DeleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.get.GetStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.start.StartStageUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,15 +32,18 @@ public class StageController {
     private final GetStageUseCase getStageUseCase;
     private final StartStageUseCase startStageUseCase;
     private final CompleteStageUseCase completeStageUseCase;
+    private final DeleteStageUseCase deleteStageUseCase;
 
     public StageController(CreateStageUseCase createStageUseCase,
                            GetStageUseCase getStageUseCase,
                            StartStageUseCase startStageUseCase,
-                           CompleteStageUseCase completeStageUseCase) {
+                           CompleteStageUseCase completeStageUseCase,
+                           DeleteStageUseCase deleteStageUseCase) {
         this.createStageUseCase = createStageUseCase;
         this.getStageUseCase = getStageUseCase;
         this.startStageUseCase = startStageUseCase;
         this.completeStageUseCase = completeStageUseCase;
+        this.deleteStageUseCase = deleteStageUseCase;
     }
 
     @PostMapping("/stages")
@@ -67,5 +72,11 @@ public class StageController {
     public ResponseEntity<StageResponse> completeStage(@PathVariable UUID id,
                                                        @Valid @RequestBody CompleteStageRequest request) {
         return ResponseEntity.ok(completeStageUseCase.execute(id, request));
+    }
+
+    @DeleteMapping("/stages/{id}")
+    public ResponseEntity<Void> deleteStage(@PathVariable UUID id) {
+        deleteStageUseCase.execute(id);
+        return ResponseEntity.noContent().build();
     }
 }

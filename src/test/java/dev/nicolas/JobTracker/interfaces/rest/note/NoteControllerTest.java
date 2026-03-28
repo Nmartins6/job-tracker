@@ -2,6 +2,7 @@ package dev.nicolas.JobTracker.interfaces.rest.note;
 
 import dev.nicolas.JobTracker.application.dto.note.NoteResponse;
 import dev.nicolas.JobTracker.application.usecases.note.create.CreateNoteUseCase;
+import dev.nicolas.JobTracker.application.usecases.note.delete.DeleteNoteUseCase;
 import dev.nicolas.JobTracker.application.usecases.note.get.GetNoteUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import dev.nicolas.JobTracker.interfaces.rest.GlobalExceptionHandler;
@@ -18,8 +19,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,6 +42,9 @@ class NoteControllerTest {
 
     @MockitoBean
     private GetNoteUseCase getNoteUseCase;
+
+    @MockitoBean
+    private DeleteNoteUseCase deleteNoteUseCase;
 
     @Test
     void shouldCreateNote() throws Exception {
@@ -114,6 +121,28 @@ class NoteControllerTest {
                 .thenThrow(new DomainException("Nota não encontrada pelo id " + id));
 
         mockMvc.perform(get("/api/v1/notes/{id}", id))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Domain Error"));
+    }
+
+    @Test
+    void shouldDeleteNote() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doNothing().when(deleteNoteUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/notes/{id}", id))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenDeletingUnknownNote() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doThrow(new DomainException("Nota não encontrada pelo id " + id))
+                .when(deleteNoteUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/notes/{id}", id))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Domain Error"));
     }
