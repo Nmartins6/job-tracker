@@ -39,4 +39,9 @@ public class StageRepositoryImplement implements StageRepository {
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        stageJpaRepository.deleteById(id);
+    }
 }

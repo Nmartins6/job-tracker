@@ -9,9 +9,11 @@ import {
   ApplicationHistoryEventResponse,
   ApplicationResponse,
   ApplicationStatus,
+  CreateJobRequirementRequest,
   CreateNoteRequest,
   CreateStageRequest,
   JobMatchingResponse,
+  JobRequirementResponse,
   JobResponse,
   NoteResponse,
   SkillResponse,
@@ -51,6 +53,8 @@ export class ApplicationDetailPageComponent {
 
   protected readonly job = signal<JobResponse | null>(null);
 
+  protected readonly jobRequirements = signal<JobRequirementResponse[]>([]);
+
   protected readonly stages = signal<StageResponse[]>([]);
 
   protected readonly notes = signal<NoteResponse[]>([]);
@@ -72,8 +76,91 @@ export class ApplicationDetailPageComponent {
     return `${Math.max(score, 0)}%`;
   });
 
+  protected readonly prioritizedMatchingRequirements = computed(() => {
+    const requirements = this.matching()?.requirements ?? [];
+
+    return [...requirements].sort((left, right) => {
+      if (left.met !== right.met) {
+        return left.met ? 1 : -1;
+      }
+
+      if (left.mustHave !== right.mustHave) {
+        return left.mustHave ? -1 : 1;
+      }
+
+      return right.gapLevel - left.gapLevel || right.weight - left.weight;
+    });
+  });
+
+  protected readonly recommendedFocusRequirements = computed(() =>
+    this.prioritizedMatchingRequirements()
+      .filter((requirement) => !requirement.met)
+      .slice(0, 3),
+  );
+
+  protected readonly readinessHeadline = computed(() => {
+    const matching = this.matching();
+
+    if (!matching) {
+      return '';
+    }
+
+    if (matching.mustHaveUnmetRequirements > 0) {
+      return 'Existem must-haves pendentes';
+    }
+
+    if (matching.score >= 80) {
+      return 'Aderencia forte para esta vaga';
+    }
+
+    if (matching.score >= 60) {
+      return 'Boa base, mas ainda ha gaps importantes';
+    }
+
+    return 'A vaga ainda pede reforco em pontos-chave';
+  });
+
+  protected readonly readinessMessage = computed(() => {
+    const matching = this.matching();
+
+    if (!matching) {
+      return '';
+    }
+
+    if (matching.mustHaveUnmetRequirements > 0) {
+      return 'Priorize primeiro os requisitos obrigatorios ainda nao atendidos, porque eles costumam pesar mais na triagem.';
+    }
+
+    if (matching.score >= 80) {
+      return 'Seu perfil ja cobre boa parte da vaga. Agora vale acompanhar as etapas e manter o historico organizado.';
+    }
+
+    if (matching.score >= 60) {
+      return 'A oportunidade ainda faz sentido, mas ha alguns pontos de estudo ou adaptacao de curriculo para observar.';
+    }
+
+    return 'Use os gaps para decidir se vale insistir nesta vaga agora ou focar em oportunidades mais aderentes.';
+  });
+
+  protected readonly sortedRequirements = computed(() =>
+    [...this.jobRequirements()].sort((left, right) => {
+      if (left.mustHave !== right.mustHave) {
+        return left.mustHave ? -1 : 1;
+      }
+
+      return right.weight - left.weight || right.desiredLevel - left.desiredLevel;
+    }),
+  );
+
   protected readonly statusForm = this.fb.nonNullable.group({
     status: ['ACTIVE' as ApplicationStatus, [Validators.required]],
+  });
+
+  protected readonly requirementForm = this.fb.nonNullable.group({
+    skillId: ['', [Validators.required]],
+    mustHave: [true],
+    desiredLevel: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
+    weight: [3, [Validators.required, Validators.min(1)]],
   });
 
   protected readonly noteForm = this.fb.nonNullable.group({
@@ -110,6 +197,7 @@ export class ApplicationDetailPageComponent {
           forkJoin({
             jobs: this.api.getJobs(),
             skills: this.api.getSkills(),
+            requirements: this.api.getJobRequirementsByJobId(application.jobId),
             stages: this.api.getStagesByApplicationId(applicationId),
             notes: this.api.getNotesByApplicationId(applicationId),
             history: this.api.getApplicationHistory(applicationId),
@@ -118,10 +206,20 @@ export class ApplicationDetailPageComponent {
         ),
       )
       .subscribe({
-        next: ({ application, jobs, skills, stages, notes, history, matching }) => {
+        next: ({
+          application,
+          jobs,
+          skills,
+          requirements,
+          stages,
+          notes,
+          history,
+          matching,
+        }) => {
           this.application.set(application);
           this.job.set(jobs.find((job) => job.id === application.jobId) ?? null);
           this.skills.set(skills);
+          this.jobRequirements.set(requirements);
           this.stages.set(stages);
           this.notes.set(notes);
           this.history.set(history.events);
@@ -137,8 +235,52 @@ export class ApplicationDetailPageComponent {
             toErrorMessage(error, 'Não foi possível abrir a candidatura.'),
           );
           this.isLoading.set(false);
-        },
-      });
+      },
+    });
+  }
+
+  protected createRequirement(): void {
+    const application = this.application();
+
+    if (!application || this.requirementForm.invalid) {
+      this.requirementForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.requirementForm.getRawValue();
+    const request: CreateJobRequirementRequest = {
+      jobId: application.jobId,
+      skillId: value.skillId,
+      mustHave: value.mustHave,
+      desiredLevel: Number(value.desiredLevel),
+      weight: Number(value.weight),
+    };
+
+    this.runMutation(
+      this.api.createJobRequirement(request),
+      'Requisito adicionado a esta vaga.',
+      () => {
+        this.requirementForm.patchValue({
+          skillId: '',
+          mustHave: true,
+          desiredLevel: 3,
+          weight: 3,
+        });
+      },
+    );
+  }
+
+  protected deleteRequirement(requirement: JobRequirementResponse): void {
+    const skillLabel = this.requirementLabel(requirement.skillId);
+
+    if (!window.confirm(`Remover o requisito "${skillLabel}" desta vaga?`)) {
+      return;
+    }
+
+    this.runMutation(
+      this.api.deleteJobRequirement(requirement.id),
+      `Requisito "${skillLabel}" removido da vaga.`,
+    );
   }
 
   protected updateStatus(): void {
@@ -174,6 +316,18 @@ export class ApplicationDetailPageComponent {
     });
   }
 
+  protected deleteNote(note: NoteResponse): void {
+    const targetLabel = note.stageId
+      ? `a nota vinculada a "${this.stageLabel(note.stageId)}"`
+      : 'esta nota geral';
+
+    if (!window.confirm(`Deseja remover ${targetLabel}?`)) {
+      return;
+    }
+
+    this.runMutation(this.api.deleteNote(note.id), 'Nota removida do histórico.');
+  }
+
   protected createStage(): void {
     const application = this.application();
 
@@ -197,6 +351,21 @@ export class ApplicationDetailPageComponent {
         deadlineAt: '',
       });
     });
+  }
+
+  protected deleteStage(stage: StageResponse): void {
+    if (
+      !window.confirm(
+        `Remover a etapa "${stage.name}"? Se ela tiver notas vinculadas, a operação será bloqueada.`,
+      )
+    ) {
+      return;
+    }
+
+    this.runMutation(
+      this.api.deleteStage(stage.id),
+      `Etapa "${stage.name}" removida do processo.`,
+    );
   }
 
   protected startStage(stageId: UUID): void {
@@ -237,6 +406,57 @@ export class ApplicationDetailPageComponent {
   protected requirementLabel(skillId: UUID): string {
     const skill = this.skills().find((item) => item.id === skillId);
     return skill ? skill.name : `Skill ${skillId.slice(0, 8)}`;
+  }
+
+  protected stageLabel(stageId: UUID): string {
+    const stage = this.stages().find((item) => item.id === stageId);
+    return stage ? `${stage.orderIndex} · ${stage.name}` : `Etapa ${stageId.slice(0, 8)}`;
+  }
+
+  protected requirementGapTone(requirement: JobMatchingResponse['requirements'][number]): string {
+    if (requirement.met) {
+      return 'tag-success';
+    }
+
+    if (requirement.mustHave || requirement.gapLevel >= 2) {
+      return 'tag-danger';
+    }
+
+    return 'tag-warning';
+  }
+
+  protected requirementGapLabel(requirement: JobMatchingResponse['requirements'][number]): string {
+    if (requirement.met) {
+      return 'Atendida';
+    }
+
+    if (requirement.gapLevel >= 3) {
+      return 'Gap alto';
+    }
+
+    if (requirement.gapLevel === 2) {
+      return 'Gap moderado';
+    }
+
+    return 'Gap leve';
+  }
+
+  protected readinessClass(): string {
+    const matching = this.matching();
+
+    if (!matching) {
+      return 'message message-info';
+    }
+
+    if (matching.mustHaveUnmetRequirements > 0) {
+      return 'message message-error';
+    }
+
+    if (matching.score >= 80) {
+      return 'message message-success';
+    }
+
+    return 'message message-info';
   }
 
   private runMutation(

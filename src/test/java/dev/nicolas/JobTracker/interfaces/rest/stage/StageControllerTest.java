@@ -6,6 +6,7 @@ import dev.nicolas.JobTracker.application.dto.stage.StageResponse;
 import dev.nicolas.JobTracker.application.dto.stage.StartStageRequest;
 import dev.nicolas.JobTracker.application.usecases.stage.complete.CompleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.create.CreateStageUseCase;
+import dev.nicolas.JobTracker.application.usecases.stage.delete.DeleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.get.GetStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.start.StartStageUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
@@ -25,7 +26,10 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,6 +58,9 @@ class StageControllerTest {
 
     @MockitoBean
     private CompleteStageUseCase completeStageUseCase;
+
+    @MockitoBean
+    private DeleteStageUseCase deleteStageUseCase;
 
     @Test
     void shouldCreateStage() throws Exception {
@@ -165,6 +172,28 @@ class StageControllerTest {
 
         mockMvc.perform(get("/api/v1/stages/{id}", id))
                 .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Domain Error"));
+    }
+
+    @Test
+    void shouldDeleteStage() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doNothing().when(deleteStageUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/stages/{id}", id))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenDeletingStageWithLinkedNotes() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doThrow(new DomainException("Etapa possui notas vinculadas e não pode ser removida"))
+                .when(deleteStageUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/stages/{id}", id))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Domain Error"));
     }
 }

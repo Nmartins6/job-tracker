@@ -11,4 +11,6 @@ public interface StageRepository {
     Optional<Stage> findById(UUID id);
 
     List<Stage> findByApplicationId(UUID applicationId);
+
+    void deleteById(UUID id);
 }

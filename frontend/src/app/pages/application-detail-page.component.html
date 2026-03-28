@@ -82,19 +82,52 @@
             </div>
           </div>
 
+          <div [class]="readinessClass()">
+            <strong>{{ readinessHeadline() }}</strong>
+            <div>{{ readinessMessage() }}</div>
+          </div>
+
+          @if (recommendedFocusRequirements().length > 0) {
+            <div class="list">
+              @for (requirement of recommendedFocusRequirements(); track requirement.skillId) {
+                <div class="list-item">
+                  <div class="split">
+                    <strong>Foco: {{ requirementLabel(requirement.skillId) }}</strong>
+                    <span class="tag" [class]="requirementGapTone(requirement)">
+                      {{ requirementGapLabel(requirement) }}
+                    </span>
+                  </div>
+                  <p class="muted">
+                    {{ requirement.mustHave ? 'Must-have' : 'Opcional' }} · Peso:
+                    {{ requirement.weight }} · Nivel desejado:
+                    {{ requirement.desiredLevel }}
+                  </p>
+                </div>
+              }
+            </div>
+          }
+
           <div class="list">
-            @for (requirement of matching()!.requirements; track requirement.skillId) {
+            @for (requirement of prioritizedMatchingRequirements(); track requirement.skillId) {
               <div class="list-item">
                 <div class="split">
                   <strong>{{ requirementLabel(requirement.skillId) }}</strong>
-                  <span [class]="requirement.met ? 'status-pill status-hired' : 'status-pill status-rejected'">
-                    {{ requirement.met ? 'Atendida' : 'Gap' }}
-                  </span>
+                  <div class="tag-row">
+                    <span
+                      [class]="requirement.mustHave ? 'status-pill status-active' : 'status-pill status-withdrawn'"
+                    >
+                      {{ requirement.mustHave ? 'Must-have' : 'Opcional' }}
+                    </span>
+                    <span class="tag" [class]="requirementGapTone(requirement)">
+                      {{ requirementGapLabel(requirement) }}
+                    </span>
+                  </div>
                 </div>
                 <p class="muted">
                   Nivel desejado: {{ requirement.desiredLevel }} · Nivel do candidato:
                   {{ requirement.candidateLevel ?? 'n/a' }} · Gap:
-                  {{ requirement.gapLevel }}
+                  {{ requirement.gapLevel }} · Peso:
+                  {{ requirement.weight }}
                 </p>
               </div>
             }
@@ -103,6 +136,96 @@
           <div class="empty-state">
             A aderencia aparece aqui quando o usuario e a vaga ja tiverem skills e
             requisitos cadastrados.
+          </div>
+        }
+      </article>
+
+      <article class="panel stack" style="grid-column: span 4">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Requisitos da vaga</h2>
+            <p class="panel-subtitle">
+              Cadastre o que esta oportunidade realmente pede para o matching ficar util.
+            </p>
+          </div>
+        </div>
+
+        <form class="stack" [formGroup]="requirementForm" (ngSubmit)="createRequirement()">
+          <div class="field-group">
+            <label for="requirement-skill">Skill</label>
+            <select class="select" id="requirement-skill" formControlName="skillId">
+              <option value="">Selecione uma skill</option>
+              @for (skill of skills(); track skill.id) {
+                <option [value]="skill.id">{{ skill.name }} · {{ skill.category || 'Sem categoria' }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="grid-two">
+            <div class="field-group">
+              <label for="requirement-level">Nivel desejado</label>
+              <input
+                class="field"
+                id="requirement-level"
+                type="number"
+                min="1"
+                max="5"
+                formControlName="desiredLevel"
+              />
+            </div>
+
+            <div class="field-group">
+              <label for="requirement-weight">Peso</label>
+              <input
+                class="field"
+                id="requirement-weight"
+                type="number"
+                min="1"
+                formControlName="weight"
+              />
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" formControlName="mustHave" />
+            <span>Obrigatorio para considerar a vaga aderente</span>
+          </label>
+
+          <button class="button" type="submit" [disabled]="isSubmitting()">
+            Adicionar requisito
+          </button>
+        </form>
+
+        @if (sortedRequirements().length === 0) {
+          <div class="empty-state">
+            Esta vaga ainda nao tem requisitos cadastrados. Sem isso, o matching perde utilidade.
+          </div>
+        } @else {
+          <div class="list">
+            @for (requirement of sortedRequirements(); track requirement.id) {
+              <div class="list-item">
+                <div class="split">
+                  <strong>{{ requirementLabel(requirement.skillId) }}</strong>
+                  <div class="button-row">
+                    <span [class]="requirement.mustHave ? 'status-pill status-active' : 'status-pill status-withdrawn'">
+                      {{ requirement.mustHave ? 'Must-have' : 'Opcional' }}
+                    </span>
+                    <button
+                      class="button button-danger"
+                      type="button"
+                      [disabled]="isSubmitting()"
+                      (click)="deleteRequirement(requirement)"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </div>
+                <p class="muted">
+                  Nivel desejado: {{ requirement.desiredLevel }} · Peso:
+                  {{ requirement.weight }}
+                </p>
+              </div>
+            }
           </div>
         }
       </article>
@@ -170,6 +293,14 @@
                   >
                     Concluir
                   </button>
+                  <button
+                    class="button button-danger"
+                    type="button"
+                    [disabled]="isSubmitting()"
+                    (click)="deleteStage(stage)"
+                  >
+                    Remover
+                  </button>
                 </div>
               </div>
             }
@@ -213,8 +344,20 @@
             @for (note of notes(); track note.id) {
               <div class="list-item stack">
                 <div class="split">
-                  <strong>{{ note.stageId ? 'Nota vinculada a etapa' : 'Nota geral' }}</strong>
-                  <span class="muted">{{ note.createdAt | date: 'short' }}</span>
+                  <strong>
+                    {{ note.stageId ? stageLabel(note.stageId) : 'Nota geral' }}
+                  </strong>
+                  <div class="button-row">
+                    <span class="muted">{{ note.createdAt | date: 'short' }}</span>
+                    <button
+                      class="button button-danger"
+                      type="button"
+                      [disabled]="isSubmitting()"
+                      (click)="deleteNote(note)"
+                    >
+                      Remover
+                    </button>
+                  </div>
                 </div>
                 <p>{{ note.content }}</p>
               </div>

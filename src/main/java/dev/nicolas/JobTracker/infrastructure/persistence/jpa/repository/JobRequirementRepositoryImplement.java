@@ -45,4 +45,9 @@ public class JobRequirementRepositoryImplement implements JobRequirementReposito
     public Optional<JobRequirement> findByJobIdAndSkillId(UUID jobId, UUID skillId) {
         return jobRequirementJpaRepository.findByJobIdAndSkillId(jobId, skillId).map(mapper::toDomain);
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        jobRequirementJpaRepository.deleteById(id);
+    }
 }

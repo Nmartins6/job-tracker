@@ -84,6 +84,23 @@ export interface UserSkillResponse {
   level: number;
 }
 
+export interface CreateJobRequirementRequest {
+  jobId: UUID;
+  skillId: UUID;
+  mustHave: boolean;
+  desiredLevel: number;
+  weight: number;
+}
+
+export interface JobRequirementResponse {
+  id: UUID;
+  jobId: UUID;
+  skillId: UUID;
+  mustHave: boolean;
+  desiredLevel: number;
+  weight: number;
+}
+
 export interface CreateApplicationRequest {
   userId: UUID;
   jobId: UUID;

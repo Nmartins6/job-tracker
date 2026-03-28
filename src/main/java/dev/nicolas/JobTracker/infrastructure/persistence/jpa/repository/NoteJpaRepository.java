@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface NoteJpaRepository extends JpaRepository<NoteJpaEntity, UUID> {
 
     List<NoteJpaEntity> findByApplicationIdOrderByCreatedAtAsc(UUID applicationId);
+
+    boolean existsByStageId(UUID stageId);
 }

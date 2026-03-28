@@ -3,10 +3,12 @@ package dev.nicolas.JobTracker.interfaces.rest.note;
 import dev.nicolas.JobTracker.application.dto.note.CreateNoteRequest;
 import dev.nicolas.JobTracker.application.dto.note.NoteResponse;
 import dev.nicolas.JobTracker.application.usecases.note.create.CreateNoteUseCase;
+import dev.nicolas.JobTracker.application.usecases.note.delete.DeleteNoteUseCase;
 import dev.nicolas.JobTracker.application.usecases.note.get.GetNoteUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,11 +25,14 @@ public class NoteController {
 
     private final CreateNoteUseCase createNoteUseCase;
     private final GetNoteUseCase getNoteUseCase;
+    private final DeleteNoteUseCase deleteNoteUseCase;
 
     public NoteController(CreateNoteUseCase createNoteUseCase,
-                          GetNoteUseCase getNoteUseCase) {
+                          GetNoteUseCase getNoteUseCase,
+                          DeleteNoteUseCase deleteNoteUseCase) {
         this.createNoteUseCase = createNoteUseCase;
         this.getNoteUseCase = getNoteUseCase;
+        this.deleteNoteUseCase = deleteNoteUseCase;
     }
 
     @PostMapping("/notes")
@@ -44,5 +49,11 @@ public class NoteController {
     @GetMapping("/applications/{applicationId}/notes")
     public ResponseEntity<List<NoteResponse>> getNotesByApplicationId(@PathVariable UUID applicationId) {
         return ResponseEntity.ok(getNoteUseCase.findByApplicationId(applicationId));
+    }
+
+    @DeleteMapping("/notes/{id}")
+    public ResponseEntity<Void> deleteNote(@PathVariable UUID id) {
+        deleteNoteUseCase.execute(id);
+        return ResponseEntity.noContent().build();
     }
 }
