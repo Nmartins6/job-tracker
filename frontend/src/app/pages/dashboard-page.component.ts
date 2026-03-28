@@ -2,14 +2,18 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
 import { toErrorMessage } from '../core/api/error.utils';
 import { JobTrackerApiService } from '../core/api/job-tracker-api.service';
 import {
   ApplicationResponse,
   CreateApplicationRequest,
   CreateJobRequest,
+  CreateSkillRequest,
+  CreateUserSkillRequest,
   JobResponse,
+  SkillResponse,
+  UserSkillResponse,
 } from '../core/api/models';
 import { AuthStore } from '../core/auth/auth.store';
 
@@ -18,6 +22,11 @@ interface ApplicationCard extends ApplicationResponse {
   title: string;
   location: string | null;
   seniority: string | null;
+}
+
+interface UserSkillCard extends UserSkillResponse {
+  skillName: string;
+  skillCategory: string | null;
 }
 
 @Component({
@@ -45,9 +54,15 @@ export class DashboardPageComponent {
 
   protected readonly jobs = signal<JobResponse[]>([]);
 
+  protected readonly skills = signal<SkillResponse[]>([]);
+
+  protected readonly userSkills = signal<UserSkillResponse[]>([]);
+
   protected readonly applications = signal<ApplicationResponse[]>([]);
 
   protected readonly knownUserId = computed(() => this.auth.knownUserId());
+
+  protected readonly levelOptions = [1, 2, 3, 4, 5];
 
   protected readonly applicationCards = computed<ApplicationCard[]>(() => {
     const jobsById = new Map(this.jobs().map((job) => [job.id, job]));
@@ -65,6 +80,22 @@ export class DashboardPageComponent {
     });
   });
 
+  protected readonly userSkillCards = computed<UserSkillCard[]>(() => {
+    const skillsById = new Map(this.skills().map((skill) => [skill.id, skill]));
+
+    return this.userSkills()
+      .map((userSkill) => {
+        const skill = skillsById.get(userSkill.skillId);
+
+        return {
+          ...userSkill,
+          skillName: skill?.name ?? 'Skill sem nome',
+          skillCategory: skill?.category ?? null,
+        };
+      })
+      .sort((left, right) => right.level - left.level || left.skillName.localeCompare(right.skillName));
+  });
+
   protected readonly metrics = computed(() => {
     const applications = this.applications();
 
@@ -72,6 +103,7 @@ export class DashboardPageComponent {
       totalApplications: applications.length,
       activeApplications: applications.filter((item) => item.status === 'ACTIVE').length,
       totalJobs: this.jobs().length,
+      totalUserSkills: this.userSkills().length,
       trackedUserId: this.knownUserId(),
     };
   });
@@ -83,6 +115,17 @@ export class DashboardPageComponent {
     seniority: [''],
     location: [''],
     description: [''],
+  });
+
+  protected readonly createSkillForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required]],
+    category: [''],
+  });
+
+  protected readonly createUserSkillForm = this.fb.nonNullable.group({
+    skillId: ['', [Validators.required]],
+    yearsExperience: [0, [Validators.required, Validators.min(0)]],
+    level: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
   });
 
   protected readonly createApplicationForm = this.fb.nonNullable.group({
@@ -104,11 +147,17 @@ export class DashboardPageComponent {
 
     forkJoin({
       jobs: this.api.getJobs(),
+      skills: this.api.getSkills(),
       applications: this.api.getApplications(),
+      userSkills: this.knownUserId()
+        ? this.api.getUserSkillsByUserId(this.knownUserId()!)
+        : of([] as UserSkillResponse[]),
     }).subscribe({
-      next: ({ jobs, applications }) => {
+      next: ({ jobs, skills, applications, userSkills }) => {
         this.jobs.set(jobs);
+        this.skills.set(skills);
         this.applications.set(applications);
+        this.userSkills.set(userSkills);
         this.isLoading.set(false);
       },
       error: (error: unknown) => {
@@ -116,6 +165,32 @@ export class DashboardPageComponent {
           toErrorMessage(error, 'Não foi possível carregar o workspace.'),
         );
         this.isLoading.set(false);
+      },
+    });
+  }
+
+  protected submitSkill(): void {
+    if (this.createSkillForm.invalid) {
+      this.createSkillForm.markAllAsTouched();
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.api.createSkill(this.createSkillForm.getRawValue() as CreateSkillRequest).subscribe({
+      next: (skill) => {
+        this.createSkillForm.reset({
+          name: '',
+          category: '',
+        });
+        this.successMessage.set(`Skill "${skill.name}" adicionada ao catálogo.`);
+        this.loadWorkspace();
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(
+          toErrorMessage(error, 'Nao foi possivel cadastrar a skill.'),
+        );
       },
     });
   }
@@ -190,6 +265,52 @@ export class DashboardPageComponent {
           );
         },
       });
+  }
+
+  protected submitUserSkill(): void {
+    const userId = this.knownUserId();
+
+    if (!userId) {
+      this.errorMessage.set(
+        'Seu perfil ainda nao foi identificado nesta sessao. Saia e entre novamente para continuar.',
+      );
+      return;
+    }
+
+    if (this.createUserSkillForm.invalid) {
+      this.createUserSkillForm.markAllAsTouched();
+      return;
+    }
+
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    const value = this.createUserSkillForm.getRawValue();
+    const request: CreateUserSkillRequest = {
+      userId,
+      skillId: value.skillId,
+      yearsExperience: Number(value.yearsExperience),
+      level: Number(value.level),
+    };
+
+    this.api.createUserSkill(request).subscribe({
+      next: () => {
+        this.createUserSkillForm.patchValue({
+          skillId: '',
+          yearsExperience: 0,
+          level: 3,
+        });
+        this.successMessage.set(
+          'Skill vinculada ao seu perfil. O matching agora consegue usar esse dado.',
+        );
+        this.loadWorkspace();
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(
+          toErrorMessage(error, 'Nao foi possivel vincular a skill ao seu perfil.'),
+        );
+      },
+    });
   }
 
   protected statusClass(status: string): string {

@@ -33,6 +33,10 @@
       <span class="muted">Perfil conectado</span>
       <strong>{{ metrics().trackedUserId ? 'Sim' : 'Nao' }}</strong>
     </div>
+    <div class="metric-card">
+      <span class="muted">Skills no perfil</span>
+      <strong>{{ metrics().totalUserSkills }}</strong>
+    </div>
   </div>
 
   @if (knownUserId()) {
@@ -162,6 +166,135 @@
           <p class="muted">A analise aparece quando seu perfil e a vaga ja tiverem skills e requisitos cadastrados.</p>
         </div>
       </div>
+    </article>
+  </div>
+
+  <div class="section-grid">
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Catálogo de skills</h2>
+          <p class="panel-subtitle">
+            Cadastre habilidades que vao aparecer no seu perfil e nos requisitos das vagas.
+          </p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="createSkillForm" (ngSubmit)="submitSkill()">
+        <div class="field-group">
+          <label for="skill-name">Nome da skill</label>
+          <input class="field" id="skill-name" type="text" formControlName="name" />
+        </div>
+
+        <div class="field-group">
+          <label for="skill-category">Categoria</label>
+          <input class="field" id="skill-category" type="text" formControlName="category" />
+        </div>
+
+        <button class="button" type="submit">Adicionar skill</button>
+      </form>
+
+      @if (skills().length === 0) {
+        <div class="empty-state">Ainda nao ha skills cadastradas.</div>
+      } @else {
+        <div class="list">
+          @for (skill of skills(); track skill.id) {
+            <div class="list-item">
+              <div class="split">
+                <strong>{{ skill.name }}</strong>
+                <span class="muted">{{ skill.category || 'Sem categoria' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Meu perfil técnico</h2>
+          <p class="panel-subtitle">
+            Vincule as skills do catálogo ao seu perfil com nível e tempo de experiência.
+          </p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="createUserSkillForm" (ngSubmit)="submitUserSkill()">
+        <div class="field-group">
+          <label for="user-skill-skill">Skill</label>
+          <select class="select" id="user-skill-skill" formControlName="skillId">
+            <option value="">Selecione uma skill</option>
+            @for (skill of skills(); track skill.id) {
+              <option [value]="skill.id">{{ skill.name }} · {{ skill.category || 'Sem categoria' }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="grid-two">
+          <div class="field-group">
+            <label for="user-skill-level">Nivel</label>
+            <select class="select" id="user-skill-level" formControlName="level">
+              @for (level of levelOptions; track level) {
+                <option [value]="level">{{ level }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="user-skill-years">Anos de experiencia</label>
+            <input
+              class="field"
+              id="user-skill-years"
+              type="number"
+              min="0"
+              formControlName="yearsExperience"
+            />
+          </div>
+        </div>
+
+        <button class="button" type="submit" [disabled]="!knownUserId()">
+          Vincular ao meu perfil
+        </button>
+      </form>
+
+      @if (!knownUserId()) {
+        <div class="message message-info">
+          Entre novamente para que o frontend reconheca seu perfil e libere o cadastro de skills do usuario.
+        </div>
+      }
+    </article>
+
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Skills no seu perfil</h2>
+          <p class="panel-subtitle">
+            Esta lista alimenta a aderencia mostrada no detalhe de cada candidatura.
+          </p>
+        </div>
+      </div>
+
+      @if (userSkillCards().length === 0) {
+        <div class="empty-state">
+          Nenhuma skill vinculada ao seu perfil ainda. Comece cadastrando as principais tecnologias que voce usa.
+        </div>
+      } @else {
+        <div class="list">
+          @for (userSkill of userSkillCards(); track userSkill.id) {
+            <div class="list-item">
+              <div class="split">
+                <strong>{{ userSkill.skillName }}</strong>
+                <span class="muted">Nivel {{ userSkill.level }}/5</span>
+              </div>
+              <p class="muted">
+                {{ userSkill.skillCategory || 'Sem categoria' }} ·
+                {{ userSkill.yearsExperience }} ano(s) de experiencia
+              </p>
+            </div>
+          }
+        </div>
+      }
     </article>
   </div>
 

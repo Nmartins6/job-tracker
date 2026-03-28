@@ -86,7 +86,7 @@
             @for (requirement of matching()!.requirements; track requirement.skillId) {
               <div class="list-item">
                 <div class="split">
-                  <strong>Skill {{ requirement.skillId.slice(0, 8) }}</strong>
+                  <strong>{{ requirementLabel(requirement.skillId) }}</strong>
                   <span [class]="requirement.met ? 'status-pill status-hired' : 'status-pill status-rejected'">
                     {{ requirement.met ? 'Atendida' : 'Gap' }}
                   </span>
