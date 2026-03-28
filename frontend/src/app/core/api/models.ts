@@ -39,6 +39,17 @@ export interface UserResponse {
   bio: string | null;
 }
 
+export interface CreateSkillRequest {
+  name: string;
+  category?: string | null;
+}
+
+export interface SkillResponse {
+  id: UUID;
+  name: string;
+  category: string | null;
+}
+
 export interface CreateJobRequest {
   company: string;
   title: string;
@@ -56,6 +67,21 @@ export interface JobResponse {
   seniority: string | null;
   location: string | null;
   description: string | null;
+}
+
+export interface CreateUserSkillRequest {
+  userId: UUID;
+  skillId: UUID;
+  yearsExperience: number;
+  level: number;
+}
+
+export interface UserSkillResponse {
+  id: UUID;
+  userId: UUID;
+  skillId: UUID;
+  yearsExperience: number;
+  level: number;
 }
 
 export interface CreateApplicationRequest {

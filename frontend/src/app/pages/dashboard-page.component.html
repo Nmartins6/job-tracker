@@ -1,11 +1,10 @@
 <section class="page stack">
   <div class="hero">
-    <span class="eyebrow">Workspace</span>
-    <h1>Monte um fluxo local que conte a história do projeto</h1>
+    <span class="eyebrow">Painel</span>
+    <h1>Acompanhe oportunidades e candidaturas em um fluxo so seu</h1>
     <p>
-      O frontend conversa direto com o backend via proxy local. Aqui você consegue
-      cadastrar vagas, criar candidaturas e navegar pelos fluxos mais importantes sem
-      depender de Postman ou de um deploy pago.
+      Cadastre as vagas que voce quer acompanhar, associe cada candidatura ao seu
+      perfil e abra o detalhe para registrar etapas, notas, historico e aderencia.
     </p>
   </div>
 
@@ -19,7 +18,7 @@
 
   <div class="metrics">
     <div class="metric-card">
-      <span class="muted">Candidaturas rastreadas</span>
+      <span class="muted">Candidaturas em acompanhamento</span>
       <strong>{{ metrics().totalApplications }}</strong>
     </div>
     <div class="metric-card">
@@ -27,25 +26,29 @@
       <strong>{{ metrics().activeApplications }}</strong>
     </div>
     <div class="metric-card">
-      <span class="muted">Vagas registradas</span>
+      <span class="muted">Vagas mapeadas</span>
       <strong>{{ metrics().totalJobs }}</strong>
     </div>
     <div class="metric-card">
-      <span class="muted">UserId conhecido</span>
-      <strong>{{ metrics().trackedUserId ? 'Sim' : 'Parcial' }}</strong>
+      <span class="muted">Perfil conectado</span>
+      <strong>{{ metrics().trackedUserId ? 'Sim' : 'Nao' }}</strong>
+    </div>
+    <div class="metric-card">
+      <span class="muted">Skills no perfil</span>
+      <strong>{{ metrics().totalUserSkills }}</strong>
     </div>
   </div>
 
   @if (knownUserId()) {
     <div class="message message-info">
-      Este navegador conhece o seu userId atual, então a criação de candidaturas já
-      fica mais fluida.
+      Seu perfil ja esta conectado neste navegador. Novas candidaturas podem ser
+      vinculadas ao seu usuario com menos atrito.
     </div>
   } @else {
     <div class="message message-info">
-      Se você entrou com uma conta antiga, o frontend ainda não conhece o seu userId.
-      Você pode informar o id manualmente ao criar a candidatura ou criar uma conta nova
-      pelo fluxo do próprio app.
+      Se voce estiver usando uma sessao antiga e o userId nao aparecer, saia e entre
+      novamente. Enquanto isso, ainda da para informar o id manualmente ao criar a
+      candidatura.
     </div>
   }
 
@@ -54,7 +57,7 @@
       <div class="panel-head">
         <div>
           <h2 class="panel-title">Nova vaga</h2>
-          <p class="panel-subtitle">Uma forma rápida de popular o catálogo local.</p>
+          <p class="panel-subtitle">Registre a oportunidade que voce quer acompanhar.</p>
         </div>
       </div>
 
@@ -92,7 +95,7 @@
         </div>
 
         <button class="button" type="submit" [disabled]="isCreatingJob()">
-          {{ isCreatingJob() ? 'Criando vaga...' : 'Adicionar vaga' }}
+          {{ isCreatingJob() ? 'Salvando vaga...' : 'Salvar vaga' }}
         </button>
       </form>
     </article>
@@ -102,7 +105,7 @@
         <div>
           <h2 class="panel-title">Nova candidatura</h2>
           <p class="panel-subtitle">
-            Use seu userId conhecido ou informe manualmente quando necessário.
+            Associe a oportunidade ao seu perfil para comecar o acompanhamento.
           </p>
         </div>
       </div>
@@ -130,7 +133,7 @@
         </div>
 
         <button class="button" type="submit" [disabled]="isCreatingApplication()">
-          {{ isCreatingApplication() ? 'Criando candidatura...' : 'Criar candidatura' }}
+          {{ isCreatingApplication() ? 'Registrando candidatura...' : 'Registrar candidatura' }}
         </button>
       </form>
     </article>
@@ -138,36 +141,169 @@
     <article class="panel stack" style="grid-column: span 4">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Leitura rápida do backend</h2>
+          <h2 class="panel-title">Fluxo sugerido</h2>
           <p class="panel-subtitle">
-            O que já está pronto e por que esta UI existe agora.
+            Um jeito simples de usar o sistema no dia a dia.
           </p>
         </div>
       </div>
 
       <div class="list">
         <div class="list-item">
-          <strong>Auth mínima</strong>
-          <p class="muted">O frontend reusa o HTTP Basic do backend sem inventar um token novo.</p>
+          <strong>1. Mapeie a vaga</strong>
+          <p class="muted">Cadastre empresa, titulo, senioridade e link da oportunidade.</p>
         </div>
         <div class="list-item">
-          <strong>Proxy local</strong>
-          <p class="muted">`ng serve` fala com `localhost:8080` sem dor de cabeça com CORS.</p>
+          <strong>2. Abra a candidatura</strong>
+          <p class="muted">Crie a candidatura vinculada ao seu perfil para comecar o acompanhamento.</p>
         </div>
         <div class="list-item">
-          <strong>Fluxo mais vendável</strong>
-          <p class="muted">Candidaturas, histórico, notas, etapas e matching ficam visíveis num só lugar.</p>
+          <strong>3. Registre o andamento</strong>
+          <p class="muted">No detalhe, voce pode atualizar status, etapas, prazos e feedbacks.</p>
+        </div>
+        <div class="list-item">
+          <strong>4. Consulte a aderencia</strong>
+          <p class="muted">A analise aparece quando seu perfil e a vaga ja tiverem skills e requisitos cadastrados.</p>
         </div>
       </div>
+    </article>
+  </div>
+
+  <div class="section-grid">
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Catálogo de skills</h2>
+          <p class="panel-subtitle">
+            Cadastre habilidades que vao aparecer no seu perfil e nos requisitos das vagas.
+          </p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="createSkillForm" (ngSubmit)="submitSkill()">
+        <div class="field-group">
+          <label for="skill-name">Nome da skill</label>
+          <input class="field" id="skill-name" type="text" formControlName="name" />
+        </div>
+
+        <div class="field-group">
+          <label for="skill-category">Categoria</label>
+          <input class="field" id="skill-category" type="text" formControlName="category" />
+        </div>
+
+        <button class="button" type="submit">Adicionar skill</button>
+      </form>
+
+      @if (skills().length === 0) {
+        <div class="empty-state">Ainda nao ha skills cadastradas.</div>
+      } @else {
+        <div class="list">
+          @for (skill of skills(); track skill.id) {
+            <div class="list-item">
+              <div class="split">
+                <strong>{{ skill.name }}</strong>
+                <span class="muted">{{ skill.category || 'Sem categoria' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </article>
+
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Meu perfil técnico</h2>
+          <p class="panel-subtitle">
+            Vincule as skills do catálogo ao seu perfil com nível e tempo de experiência.
+          </p>
+        </div>
+      </div>
+
+      <form class="stack" [formGroup]="createUserSkillForm" (ngSubmit)="submitUserSkill()">
+        <div class="field-group">
+          <label for="user-skill-skill">Skill</label>
+          <select class="select" id="user-skill-skill" formControlName="skillId">
+            <option value="">Selecione uma skill</option>
+            @for (skill of skills(); track skill.id) {
+              <option [value]="skill.id">{{ skill.name }} · {{ skill.category || 'Sem categoria' }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="grid-two">
+          <div class="field-group">
+            <label for="user-skill-level">Nivel</label>
+            <select class="select" id="user-skill-level" formControlName="level">
+              @for (level of levelOptions; track level) {
+                <option [value]="level">{{ level }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field-group">
+            <label for="user-skill-years">Anos de experiencia</label>
+            <input
+              class="field"
+              id="user-skill-years"
+              type="number"
+              min="0"
+              formControlName="yearsExperience"
+            />
+          </div>
+        </div>
+
+        <button class="button" type="submit" [disabled]="!knownUserId()">
+          Vincular ao meu perfil
+        </button>
+      </form>
+
+      @if (!knownUserId()) {
+        <div class="message message-info">
+          Entre novamente para que o frontend reconheca seu perfil e libere o cadastro de skills do usuario.
+        </div>
+      }
+    </article>
+
+    <article class="panel stack" style="grid-column: span 4">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Skills no seu perfil</h2>
+          <p class="panel-subtitle">
+            Esta lista alimenta a aderencia mostrada no detalhe de cada candidatura.
+          </p>
+        </div>
+      </div>
+
+      @if (userSkillCards().length === 0) {
+        <div class="empty-state">
+          Nenhuma skill vinculada ao seu perfil ainda. Comece cadastrando as principais tecnologias que voce usa.
+        </div>
+      } @else {
+        <div class="list">
+          @for (userSkill of userSkillCards(); track userSkill.id) {
+            <div class="list-item">
+              <div class="split">
+                <strong>{{ userSkill.skillName }}</strong>
+                <span class="muted">Nivel {{ userSkill.level }}/5</span>
+              </div>
+              <p class="muted">
+                {{ userSkill.skillCategory || 'Sem categoria' }} ·
+                {{ userSkill.yearsExperience }} ano(s) de experiencia
+              </p>
+            </div>
+          }
+        </div>
+      }
     </article>
   </div>
 
   <article class="panel stack">
     <div class="panel-head">
       <div>
-        <h2 class="panel-title">Candidaturas disponíveis</h2>
+        <h2 class="panel-title">Candidaturas registradas</h2>
         <p class="panel-subtitle">
-          Selecione uma candidatura para abrir histórico, notas, etapas e aderência.
+          Abra uma candidatura para registrar etapas, notas, historico e aderencia.
         </p>
       </div>
 
@@ -177,11 +313,11 @@
     </div>
 
     @if (isLoading()) {
-      <div class="empty-state">Carregando candidaturas e vagas cadastradas...</div>
+      <div class="empty-state">Carregando vagas e candidaturas registradas...</div>
     } @else if (applicationCards().length === 0) {
       <div class="empty-state">
-        Ainda não há candidaturas. Crie uma vaga e depois registre sua primeira
-        candidatura para ver o fluxo completo.
+        Ainda nao ha candidaturas. Cadastre uma vaga e registre a primeira oportunidade
+        que voce quer acompanhar.
       </div>
     } @else {
       <div class="grid-three">

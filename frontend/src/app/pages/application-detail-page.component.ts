@@ -14,6 +14,7 @@ import {
   JobMatchingResponse,
   JobResponse,
   NoteResponse,
+  SkillResponse,
   StageResponse,
   UUID,
 } from '../core/api/models';
@@ -57,6 +58,8 @@ export class ApplicationDetailPageComponent {
   protected readonly history = signal<ApplicationHistoryEventResponse[]>([]);
 
   protected readonly matching = signal<JobMatchingResponse | null>(null);
+
+  protected readonly skills = signal<SkillResponse[]>([]);
 
   protected readonly statusOptions = APPLICATION_STATUSES;
 
@@ -106,6 +109,7 @@ export class ApplicationDetailPageComponent {
         switchMap((application) =>
           forkJoin({
             jobs: this.api.getJobs(),
+            skills: this.api.getSkills(),
             stages: this.api.getStagesByApplicationId(applicationId),
             notes: this.api.getNotesByApplicationId(applicationId),
             history: this.api.getApplicationHistory(applicationId),
@@ -114,9 +118,10 @@ export class ApplicationDetailPageComponent {
         ),
       )
       .subscribe({
-        next: ({ application, jobs, stages, notes, history, matching }) => {
+        next: ({ application, jobs, skills, stages, notes, history, matching }) => {
           this.application.set(application);
           this.job.set(jobs.find((job) => job.id === application.jobId) ?? null);
+          this.skills.set(skills);
           this.stages.set(stages);
           this.notes.set(notes);
           this.history.set(history.events);
@@ -227,6 +232,11 @@ export class ApplicationDetailPageComponent {
 
   protected statusClass(status: string): string {
     return `status-pill status-${status.toLowerCase()}`;
+  }
+
+  protected requirementLabel(skillId: UUID): string {
+    const skill = this.skills().find((item) => item.id === skillId);
+    return skill ? skill.name : `Skill ${skillId.slice(0, 8)}`;
   }
 
   private runMutation(

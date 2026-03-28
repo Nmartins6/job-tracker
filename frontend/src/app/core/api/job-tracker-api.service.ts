@@ -8,13 +8,17 @@ import {
   CreateApplicationRequest,
   CreateJobRequest,
   CreateNoteRequest,
+  CreateSkillRequest,
   CreateStageRequest,
+  CreateUserSkillRequest,
   JobMatchingResponse,
   JobResponse,
   NoteResponse,
+  SkillResponse,
   StageResponse,
   StartStageRequest,
   UpdateApplicationStatusRequest,
+  UserSkillResponse,
   UUID,
 } from './models';
 
@@ -30,6 +34,22 @@ export class JobTrackerApiService {
 
   createJob(request: CreateJobRequest): Observable<JobResponse> {
     return this.http.post<JobResponse>(`${this.baseUrl}/jobs`, request);
+  }
+
+  getSkills(): Observable<SkillResponse[]> {
+    return this.http.get<SkillResponse[]>(`${this.baseUrl}/skills`);
+  }
+
+  createSkill(request: CreateSkillRequest): Observable<SkillResponse> {
+    return this.http.post<SkillResponse>(`${this.baseUrl}/skills`, request);
+  }
+
+  getUserSkillsByUserId(userId: UUID): Observable<UserSkillResponse[]> {
+    return this.http.get<UserSkillResponse[]>(`${this.baseUrl}/users/${userId}/skills`);
+  }
+
+  createUserSkill(request: CreateUserSkillRequest): Observable<UserSkillResponse> {
+    return this.http.post<UserSkillResponse>(`${this.baseUrl}/user-skills`, request);
   }
 
   getApplications(): Observable<ApplicationResponse[]> {
