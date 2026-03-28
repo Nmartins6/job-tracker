@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, map, of, switchMap } from 'rxjs';
 import { toErrorMessage } from '../core/api/error.utils';
 import { JobTrackerApiService } from '../core/api/job-tracker-api.service';
 import {
@@ -14,15 +14,37 @@ import {
   CreateUserSkillRequest,
   JobResponse,
   SkillResponse,
+  StageResponse,
+  UUID,
   UserSkillResponse,
 } from '../core/api/models';
 import { AuthStore } from '../core/auth/auth.store';
+
+type StageAttentionUrgency =
+  | 'overdue'
+  | 'soon'
+  | 'unscheduled'
+  | 'started'
+  | 'upcoming'
+  | 'idle';
+
+interface StageAttention {
+  stageId: UUID | null;
+  stageName: string | null;
+  orderIndex: number | null;
+  deadlineAt: string | null;
+  urgency: StageAttentionUrgency;
+  urgencyLabel: string;
+  urgencyWeight: number;
+  summary: string;
+}
 
 interface ApplicationCard extends ApplicationResponse {
   company: string;
   title: string;
   location: string | null;
   seniority: string | null;
+  stageAttention: StageAttention;
 }
 
 interface UserSkillCard extends UserSkillResponse {
@@ -65,6 +87,8 @@ export class DashboardPageComponent {
 
   protected readonly applications = signal<ApplicationResponse[]>([]);
 
+  protected readonly stagesByApplicationId = signal<Record<UUID, StageResponse[]>>({});
+
   protected readonly knownUserId = computed(() => this.auth.knownUserId());
 
   protected readonly levelOptions = [1, 2, 3, 4, 5];
@@ -78,18 +102,22 @@ export class DashboardPageComponent {
 
   protected readonly applicationCards = computed<ApplicationCard[]>(() => {
     const jobsById = new Map(this.jobs().map((job) => [job.id, job]));
+    const stagesByApplicationId = this.stagesByApplicationId();
 
-    return this.applications().map((application) => {
-      const job = jobsById.get(application.jobId);
+    return this.applications()
+      .map((application) => {
+        const job = jobsById.get(application.jobId);
 
-      return {
-        ...application,
-        company: job?.company ?? 'Empresa não encontrada',
-        title: job?.title ?? 'Vaga sem título',
-        location: job?.location ?? null,
-        seniority: job?.seniority ?? null,
-      };
-    });
+        return {
+          ...application,
+          company: job?.company ?? 'Empresa nao encontrada',
+          title: job?.title ?? 'Vaga sem titulo',
+          location: job?.location ?? null,
+          seniority: job?.seniority ?? null,
+          stageAttention: this.buildStageAttention(stagesByApplicationId[application.id] ?? []),
+        };
+      })
+      .sort((left, right) => this.compareApplications(left, right));
   });
 
   protected readonly userSkillCards = computed<UserSkillCard[]>(() => {
@@ -133,8 +161,16 @@ export class DashboardPageComponent {
     () => this.companyFilter().length > 0 || this.statusFilter().length > 0,
   );
 
+  protected readonly priorityApplicationCards = computed(() =>
+    this.applicationCards()
+      .filter((application) => application.status === 'ACTIVE')
+      .filter((application) => application.stageAttention.urgencyWeight <= 3)
+      .slice(0, 4),
+  );
+
   protected readonly metrics = computed(() => {
     const applications = this.applications();
+    const activeApplications = this.applicationCards().filter((item) => item.status === 'ACTIVE');
 
     return {
       totalApplications: applications.length,
@@ -142,6 +178,15 @@ export class DashboardPageComponent {
       totalJobs: this.jobs().length,
       totalUserSkills: this.userSkills().length,
       trackedUserId: this.knownUserId(),
+      overdueDeadlines: activeApplications.filter(
+        (item) => item.stageAttention.urgency === 'overdue',
+      ).length,
+      dueSoonDeadlines: activeApplications.filter(
+        (item) => item.stageAttention.urgency === 'soon',
+      ).length,
+      pendingPlanning: activeApplications.filter(
+        (item) => item.stageAttention.urgency === 'unscheduled',
+      ).length,
     };
   });
 
@@ -189,21 +234,53 @@ export class DashboardPageComponent {
       userSkills: this.knownUserId()
         ? this.api.getUserSkillsByUserId(this.knownUserId()!)
         : of([] as UserSkillResponse[]),
-    }).subscribe({
-      next: ({ jobs, skills, applications, userSkills }) => {
-        this.jobs.set(jobs);
-        this.skills.set(skills);
-        this.applications.set(applications);
-        this.userSkills.set(userSkills);
-        this.isLoading.set(false);
-      },
-      error: (error: unknown) => {
-        this.errorMessage.set(
-          toErrorMessage(error, 'Não foi possível carregar o workspace.'),
-        );
-        this.isLoading.set(false);
-      },
-    });
+    })
+      .pipe(
+        switchMap(({ jobs, skills, applications, userSkills }) => {
+          if (applications.length === 0) {
+            return of({
+              jobs,
+              skills,
+              applications,
+              userSkills,
+              stagesByApplicationId: {} as Record<UUID, StageResponse[]>,
+            });
+          }
+
+          return forkJoin(
+            applications.map((application) => this.api.getStagesByApplicationId(application.id)),
+          ).pipe(
+            map((stagesCollection) => ({
+              jobs,
+              skills,
+              applications,
+              userSkills,
+              stagesByApplicationId: Object.fromEntries(
+                applications.map((application, index) => [
+                  application.id,
+                  stagesCollection[index],
+                ]),
+              ) as Record<UUID, StageResponse[]>,
+            })),
+          );
+        }),
+      )
+      .subscribe({
+        next: ({ jobs, skills, applications, userSkills, stagesByApplicationId }) => {
+          this.jobs.set(jobs);
+          this.skills.set(skills);
+          this.applications.set(applications);
+          this.userSkills.set(userSkills);
+          this.stagesByApplicationId.set(stagesByApplicationId);
+          this.isLoading.set(false);
+        },
+        error: (error: unknown) => {
+          this.errorMessage.set(
+            toErrorMessage(error, 'Nao foi possivel carregar o workspace.'),
+          );
+          this.isLoading.set(false);
+        },
+      });
   }
 
   protected submitSkill(): void {
@@ -365,5 +442,172 @@ export class DashboardPageComponent {
   protected clearFilters(): void {
     this.companyFilter.set('');
     this.statusFilter.set('');
+  }
+
+  protected stageAttentionClass(attention: StageAttention): string {
+    switch (attention.urgency) {
+      case 'overdue':
+        return 'tag tag-danger';
+      case 'soon':
+      case 'unscheduled':
+        return 'tag tag-warning';
+      default:
+        return 'tag tag-success';
+    }
+  }
+
+  private buildStageAttention(stages: StageResponse[]): StageAttention {
+    const pendingStages = [...stages]
+      .filter((stage) => !stage.completedAt)
+      .sort((left, right) => left.orderIndex - right.orderIndex);
+
+    if (pendingStages.length === 0) {
+      return {
+        stageId: null,
+        stageName: null,
+        orderIndex: null,
+        deadlineAt: null,
+        urgency: stages.length === 0 ? 'unscheduled' : 'idle',
+        urgencyLabel: stages.length === 0 ? 'Planejar etapas' : 'Fluxo concluido',
+        urgencyWeight: stages.length === 0 ? 2 : 5,
+        summary:
+          stages.length === 0
+            ? 'Nenhuma etapa foi cadastrada ainda. Vale definir o proximo passo.'
+            : 'Todas as etapas cadastradas foram concluidas.',
+      };
+    }
+
+    const nextStage = pendingStages[0];
+
+    if (!nextStage.deadlineAt) {
+      return {
+        stageId: nextStage.id,
+        stageName: nextStage.name,
+        orderIndex: nextStage.orderIndex,
+        deadlineAt: null,
+        urgency: nextStage.startedAt ? 'started' : 'unscheduled',
+        urgencyLabel: nextStage.startedAt ? 'Em andamento' : 'Sem prazo',
+        urgencyWeight: nextStage.startedAt ? 3 : 2,
+        summary: nextStage.startedAt
+          ? `${nextStage.name} esta em andamento, mas ainda sem prazo definido.`
+          : `${nextStage.name} e a proxima etapa, mas ainda sem prazo definido.`,
+      };
+    }
+
+    const deadlineAt = nextStage.deadlineAt;
+    const deadlineTime = new Date(deadlineAt).getTime();
+    const diffHours = (deadlineTime - Date.now()) / (1000 * 60 * 60);
+    const deadlineLabel = this.deadlineDistanceLabel(deadlineAt);
+    const formattedDeadline = this.formatDateTime(deadlineAt);
+
+    if (diffHours < 0) {
+      return {
+        stageId: nextStage.id,
+        stageName: nextStage.name,
+        orderIndex: nextStage.orderIndex,
+        deadlineAt,
+        urgency: 'overdue',
+        urgencyLabel: 'Prazo vencido',
+        urgencyWeight: 0,
+        summary: `${nextStage.name} ${deadlineLabel} (${formattedDeadline}).`,
+      };
+    }
+
+    if (diffHours <= 72) {
+      return {
+        stageId: nextStage.id,
+        stageName: nextStage.name,
+        orderIndex: nextStage.orderIndex,
+        deadlineAt,
+        urgency: 'soon',
+        urgencyLabel: 'Ate 3 dias',
+        urgencyWeight: 1,
+        summary: `${nextStage.name} ${deadlineLabel} (${formattedDeadline}).`,
+      };
+    }
+
+    return {
+      stageId: nextStage.id,
+      stageName: nextStage.name,
+      orderIndex: nextStage.orderIndex,
+      deadlineAt,
+      urgency: 'upcoming',
+      urgencyLabel: 'No radar',
+      urgencyWeight: 4,
+      summary: `${nextStage.name} ${deadlineLabel} (${formattedDeadline}).`,
+    };
+  }
+
+  private compareApplications(left: ApplicationCard, right: ApplicationCard): number {
+    const statusPriority: Record<ApplicationStatus, number> = {
+      ACTIVE: 0,
+      HIRED: 1,
+      WITHDRAWN: 2,
+      REJECTED: 3,
+    };
+
+    const statusDifference = statusPriority[left.status] - statusPriority[right.status];
+
+    if (statusDifference !== 0) {
+      return statusDifference;
+    }
+
+    const urgencyDifference =
+      left.stageAttention.urgencyWeight - right.stageAttention.urgencyWeight;
+
+    if (urgencyDifference !== 0) {
+      return urgencyDifference;
+    }
+
+    const deadlineDifference = this.compareOptionalDates(
+      left.stageAttention.deadlineAt,
+      right.stageAttention.deadlineAt,
+    );
+
+    if (deadlineDifference !== 0) {
+      return deadlineDifference;
+    }
+
+    return left.company.localeCompare(right.company) || left.title.localeCompare(right.title);
+  }
+
+  private compareOptionalDates(left: string | null, right: string | null): number {
+    if (left && right) {
+      return new Date(left).getTime() - new Date(right).getTime();
+    }
+
+    if (left) {
+      return -1;
+    }
+
+    if (right) {
+      return 1;
+    }
+
+    return 0;
+  }
+
+  private deadlineDistanceLabel(deadlineAt: string): string {
+    const diffHours = (new Date(deadlineAt).getTime() - Date.now()) / (1000 * 60 * 60);
+
+    if (diffHours < 0) {
+      const overdueDays = Math.ceil(Math.abs(diffHours) / 24);
+      return overdueDays <= 1 ? 'venceu hoje' : `venceu ha ${overdueDays} dias`;
+    }
+
+    if (diffHours < 24) {
+      return 'vence hoje';
+    }
+
+    const dueDays = Math.ceil(diffHours / 24);
+
+    return `vence em ${dueDays} dia(s)`;
+  }
+
+  private formatDateTime(dateTime: string): string {
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(dateTime));
   }
 }

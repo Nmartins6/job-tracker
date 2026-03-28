@@ -37,6 +37,18 @@
       <span class="muted">Skills no perfil</span>
       <strong>{{ metrics().totalUserSkills }}</strong>
     </div>
+    <div class="metric-card">
+      <span class="muted">Prazos vencidos</span>
+      <strong>{{ metrics().overdueDeadlines }}</strong>
+    </div>
+    <div class="metric-card">
+      <span class="muted">Prazo até 3 dias</span>
+      <strong>{{ metrics().dueSoonDeadlines }}</strong>
+    </div>
+    <div class="metric-card">
+      <span class="muted">Pedindo planejamento</span>
+      <strong>{{ metrics().pendingPlanning }}</strong>
+    </div>
   </div>
 
   @if (knownUserId()) {
@@ -50,6 +62,44 @@
       novamente. Enquanto isso, ainda da para informar o id manualmente ao criar a
       candidatura.
     </div>
+  }
+
+  @if (priorityApplicationCards().length > 0) {
+    <article class="panel stack">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Pedindo atencao agora</h2>
+          <p class="panel-subtitle">
+            O painel prioriza as candidaturas ativas com prazo vencido, prazo proximo
+            ou etapas que ainda precisam de planejamento.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid-two">
+        @for (application of priorityApplicationCards(); track application.id) {
+          <a class="card-link" [routerLink]="['/applications', application.id]">
+            <div class="list-item stack">
+              <div class="split">
+                <strong>{{ application.company }} · {{ application.title }}</strong>
+                <span [class]="stageAttentionClass(application.stageAttention)">
+                  {{ application.stageAttention.urgencyLabel }}
+                </span>
+              </div>
+
+              <p class="muted">{{ application.stageAttention.summary }}</p>
+
+              <div class="split muted">
+                <span>{{ application.status }}</span>
+                <span>
+                  {{ application.stageAttention.stageName || 'Planejar etapas' }}
+                </span>
+              </div>
+            </div>
+          </a>
+        }
+      </div>
+    </article>
   }
 
   <div class="section-grid">
@@ -391,6 +441,16 @@
               <div class="split muted">
                 <span>{{ application.seniority || 'Senioridade não informada' }}</span>
                 <span>{{ application.location || 'Local não informado' }}</span>
+              </div>
+
+              <div class="list-item">
+                <div class="split">
+                  <strong>{{ application.stageAttention.stageName || 'Planejar etapas' }}</strong>
+                  <span [class]="stageAttentionClass(application.stageAttention)">
+                    {{ application.stageAttention.urgencyLabel }}
+                  </span>
+                </div>
+                <p class="muted">{{ application.stageAttention.summary }}</p>
               </div>
             </article>
           </a>
