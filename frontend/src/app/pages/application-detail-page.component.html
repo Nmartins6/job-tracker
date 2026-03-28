@@ -110,6 +110,86 @@
       <article class="panel stack" style="grid-column: span 4">
         <div class="panel-head">
           <div>
+            <h2 class="panel-title">Requisitos da vaga</h2>
+            <p class="panel-subtitle">
+              Cadastre o que esta oportunidade realmente pede para o matching ficar util.
+            </p>
+          </div>
+        </div>
+
+        <form class="stack" [formGroup]="requirementForm" (ngSubmit)="createRequirement()">
+          <div class="field-group">
+            <label for="requirement-skill">Skill</label>
+            <select class="select" id="requirement-skill" formControlName="skillId">
+              <option value="">Selecione uma skill</option>
+              @for (skill of skills(); track skill.id) {
+                <option [value]="skill.id">{{ skill.name }} · {{ skill.category || 'Sem categoria' }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="grid-two">
+            <div class="field-group">
+              <label for="requirement-level">Nivel desejado</label>
+              <input
+                class="field"
+                id="requirement-level"
+                type="number"
+                min="1"
+                max="5"
+                formControlName="desiredLevel"
+              />
+            </div>
+
+            <div class="field-group">
+              <label for="requirement-weight">Peso</label>
+              <input
+                class="field"
+                id="requirement-weight"
+                type="number"
+                min="1"
+                formControlName="weight"
+              />
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" formControlName="mustHave" />
+            <span>Obrigatorio para considerar a vaga aderente</span>
+          </label>
+
+          <button class="button" type="submit" [disabled]="isSubmitting()">
+            Adicionar requisito
+          </button>
+        </form>
+
+        @if (sortedRequirements().length === 0) {
+          <div class="empty-state">
+            Esta vaga ainda nao tem requisitos cadastrados. Sem isso, o matching perde utilidade.
+          </div>
+        } @else {
+          <div class="list">
+            @for (requirement of sortedRequirements(); track requirement.id) {
+              <div class="list-item">
+                <div class="split">
+                  <strong>{{ requirementLabel(requirement.skillId) }}</strong>
+                  <span [class]="requirement.mustHave ? 'status-pill status-active' : 'status-pill status-withdrawn'">
+                    {{ requirement.mustHave ? 'Must-have' : 'Opcional' }}
+                  </span>
+                </div>
+                <p class="muted">
+                  Nivel desejado: {{ requirement.desiredLevel }} · Peso:
+                  {{ requirement.weight }}
+                </p>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel stack" style="grid-column: span 4">
+        <div class="panel-head">
+          <div>
             <h2 class="panel-title">Etapas</h2>
             <p class="panel-subtitle">
               Registre entrevista, teste tecnico, retorno, proposta e outras etapas do processo.

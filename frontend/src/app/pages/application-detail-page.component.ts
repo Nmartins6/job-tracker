@@ -9,9 +9,11 @@ import {
   ApplicationHistoryEventResponse,
   ApplicationResponse,
   ApplicationStatus,
+  CreateJobRequirementRequest,
   CreateNoteRequest,
   CreateStageRequest,
   JobMatchingResponse,
+  JobRequirementResponse,
   JobResponse,
   NoteResponse,
   SkillResponse,
@@ -51,6 +53,8 @@ export class ApplicationDetailPageComponent {
 
   protected readonly job = signal<JobResponse | null>(null);
 
+  protected readonly jobRequirements = signal<JobRequirementResponse[]>([]);
+
   protected readonly stages = signal<StageResponse[]>([]);
 
   protected readonly notes = signal<NoteResponse[]>([]);
@@ -72,8 +76,25 @@ export class ApplicationDetailPageComponent {
     return `${Math.max(score, 0)}%`;
   });
 
+  protected readonly sortedRequirements = computed(() =>
+    [...this.jobRequirements()].sort((left, right) => {
+      if (left.mustHave !== right.mustHave) {
+        return left.mustHave ? -1 : 1;
+      }
+
+      return right.weight - left.weight || right.desiredLevel - left.desiredLevel;
+    }),
+  );
+
   protected readonly statusForm = this.fb.nonNullable.group({
     status: ['ACTIVE' as ApplicationStatus, [Validators.required]],
+  });
+
+  protected readonly requirementForm = this.fb.nonNullable.group({
+    skillId: ['', [Validators.required]],
+    mustHave: [true],
+    desiredLevel: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
+    weight: [3, [Validators.required, Validators.min(1)]],
   });
 
   protected readonly noteForm = this.fb.nonNullable.group({
@@ -110,6 +131,7 @@ export class ApplicationDetailPageComponent {
           forkJoin({
             jobs: this.api.getJobs(),
             skills: this.api.getSkills(),
+            requirements: this.api.getJobRequirementsByJobId(application.jobId),
             stages: this.api.getStagesByApplicationId(applicationId),
             notes: this.api.getNotesByApplicationId(applicationId),
             history: this.api.getApplicationHistory(applicationId),
@@ -118,10 +140,20 @@ export class ApplicationDetailPageComponent {
         ),
       )
       .subscribe({
-        next: ({ application, jobs, skills, stages, notes, history, matching }) => {
+        next: ({
+          application,
+          jobs,
+          skills,
+          requirements,
+          stages,
+          notes,
+          history,
+          matching,
+        }) => {
           this.application.set(application);
           this.job.set(jobs.find((job) => job.id === application.jobId) ?? null);
           this.skills.set(skills);
+          this.jobRequirements.set(requirements);
           this.stages.set(stages);
           this.notes.set(notes);
           this.history.set(history.events);
@@ -137,8 +169,39 @@ export class ApplicationDetailPageComponent {
             toErrorMessage(error, 'Não foi possível abrir a candidatura.'),
           );
           this.isLoading.set(false);
-        },
-      });
+      },
+    });
+  }
+
+  protected createRequirement(): void {
+    const application = this.application();
+
+    if (!application || this.requirementForm.invalid) {
+      this.requirementForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.requirementForm.getRawValue();
+    const request: CreateJobRequirementRequest = {
+      jobId: application.jobId,
+      skillId: value.skillId,
+      mustHave: value.mustHave,
+      desiredLevel: Number(value.desiredLevel),
+      weight: Number(value.weight),
+    };
+
+    this.runMutation(
+      this.api.createJobRequirement(request),
+      'Requisito adicionado a esta vaga.',
+      () => {
+        this.requirementForm.patchValue({
+          skillId: '',
+          mustHave: true,
+          desiredLevel: 3,
+          weight: 3,
+        });
+      },
+    );
   }
 
   protected updateStatus(): void {

@@ -7,11 +7,13 @@ import {
   CompleteStageRequest,
   CreateApplicationRequest,
   CreateJobRequest,
+  CreateJobRequirementRequest,
   CreateNoteRequest,
   CreateSkillRequest,
   CreateStageRequest,
   CreateUserSkillRequest,
   JobMatchingResponse,
+  JobRequirementResponse,
   JobResponse,
   NoteResponse,
   SkillResponse,
@@ -34,6 +36,21 @@ export class JobTrackerApiService {
 
   createJob(request: CreateJobRequest): Observable<JobResponse> {
     return this.http.post<JobResponse>(`${this.baseUrl}/jobs`, request);
+  }
+
+  getJobRequirementsByJobId(jobId: UUID): Observable<JobRequirementResponse[]> {
+    return this.http.get<JobRequirementResponse[]>(
+      `${this.baseUrl}/jobs/${jobId}/requirements`,
+    );
+  }
+
+  createJobRequirement(
+    request: CreateJobRequirementRequest,
+  ): Observable<JobRequirementResponse> {
+    return this.http.post<JobRequirementResponse>(
+      `${this.baseUrl}/job-requirements`,
+      request,
+    );
   }
 
   getSkills(): Observable<SkillResponse[]> {
