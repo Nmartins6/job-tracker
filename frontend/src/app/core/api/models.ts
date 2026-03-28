@@ -16,6 +16,8 @@ export interface ApiErrorResponse {
 }
 
 export interface AuthenticatedUserResponse {
+  id: UUID;
+  name: string;
   email: string;
 }
 

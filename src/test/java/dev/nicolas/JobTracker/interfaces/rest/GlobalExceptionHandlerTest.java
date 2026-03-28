@@ -2,6 +2,7 @@ package dev.nicolas.JobTracker.interfaces.rest;
 
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +53,19 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).containsEntry("status", HttpStatus.BAD_REQUEST.value());
         assertThat(response.getBody()).containsEntry("error", "Validation Error");
+    }
+
+    @Test
+    void shouldReturnBadRequestForKnownIntegrityViolation() {
+        ResponseEntity<Map<String, Object>> response =
+                handler.handleDataIntegrityViolation(new DataIntegrityViolationException(
+                        "could not execute statement",
+                        new RuntimeException("Unique index on users(email)")));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).containsEntry("status", HttpStatus.BAD_REQUEST.value());
+        assertThat(response.getBody()).containsEntry("error", "Domain Error");
+        assertThat(response.getBody()).containsEntry("message", "Email já cadastrado");
     }
 
     @Test

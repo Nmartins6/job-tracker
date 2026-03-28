@@ -40,8 +40,8 @@ export class AuthService {
           this.authStore.setSession({
             email: currentUser.email,
             authorizationHeader,
-            userId: user?.id ?? null,
-            name: user?.name ?? null,
+            userId: user?.id ?? currentUser.id,
+            name: user?.name ?? currentUser.name,
           }),
         ),
       );

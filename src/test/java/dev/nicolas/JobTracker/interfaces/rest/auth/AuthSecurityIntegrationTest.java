@@ -46,6 +46,8 @@ class AuthSecurityIntegrationTest {
         mockMvc.perform(get("/api/v1/auth/me")
                         .with(httpBasic("nicolas.auth@example.com", "123456")))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.name").value("Nicolas"))
                 .andExpect(jsonPath("$.email").value("nicolas.auth@example.com"));
     }
 
