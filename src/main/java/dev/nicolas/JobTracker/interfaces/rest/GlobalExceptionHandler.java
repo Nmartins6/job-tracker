@@ -1,6 +1,7 @@
 package dev.nicolas.JobTracker.interfaces.rest;
 
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -44,6 +45,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(buildBody(status, "Validation Error", ex.getMessage()));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(buildBody(
+                status,
+                "Domain Error",
+                mapIntegrityViolationMessage(ex)));
+    }
+
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<Map<String, Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
         HttpStatus status = HttpStatus.METHOD_NOT_ALLOWED;
@@ -69,5 +79,31 @@ public class GlobalExceptionHandler {
         body.put("error", error);
         body.put("message", message);
         return body;
+    }
+
+    private String mapIntegrityViolationMessage(DataIntegrityViolationException ex) {
+        String message = ex.getMostSpecificCause() != null
+                ? ex.getMostSpecificCause().getMessage()
+                : ex.getMessage();
+
+        if (message == null) {
+            return "Violação de integridade dos dados enviados.";
+        }
+
+        String normalized = message.toLowerCase();
+
+        if (normalized.contains("users") && normalized.contains("email")) {
+            return "Email já cadastrado";
+        }
+
+        if (normalized.contains("user_skills") || normalized.contains("uk_user_skills")) {
+            return "Habilidade já cadastrada para este usuário";
+        }
+
+        if (normalized.contains("job_requirements") || normalized.contains("uk_job_requirements")) {
+            return "Requisito já cadastrado para esta vaga";
+        }
+
+        return "Violação de integridade dos dados enviados.";
     }
 }

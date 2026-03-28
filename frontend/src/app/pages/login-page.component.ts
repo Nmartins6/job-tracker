@@ -46,6 +46,10 @@ export class LoginPageComponent {
   });
 
   protected submitLogin(): void {
+    if (this.loginPending()) {
+      return;
+    }
+
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       return;
@@ -72,6 +76,10 @@ export class LoginPageComponent {
   }
 
   protected submitSignUp(): void {
+    if (this.signUpPending()) {
+      return;
+    }
+
     if (this.signUpForm.invalid) {
       this.signUpForm.markAllAsTouched();
       return;

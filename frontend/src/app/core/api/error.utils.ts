@@ -9,6 +9,14 @@ export function toErrorMessage(
     return fallback;
   }
 
+  if (error.status === 401) {
+    return 'Credenciais inválidas. Confira email e senha e tente de novo.';
+  }
+
+  if (error.status === 0) {
+    return 'Não foi possível alcançar a API. Confirme se backend e proxy local estão no ar.';
+  }
+
   const payload = error.error as Partial<ApiErrorResponse> | undefined;
   const message = payload?.message;
 
