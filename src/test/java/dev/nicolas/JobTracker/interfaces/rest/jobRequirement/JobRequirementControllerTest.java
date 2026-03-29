@@ -1,9 +1,11 @@
 package dev.nicolas.JobTracker.interfaces.rest.jobRequirement;
 
 import dev.nicolas.JobTracker.application.dto.jobRequirement.JobRequirementResponse;
+import dev.nicolas.JobTracker.application.dto.jobRequirement.UpdateJobRequirementRequest;
 import dev.nicolas.JobTracker.application.usecases.jobRequirement.create.CreateJobRequirementUseCase;
 import dev.nicolas.JobTracker.application.usecases.jobRequirement.delete.DeleteJobRequirementUseCase;
 import dev.nicolas.JobTracker.application.usecases.jobRequirement.get.GetJobRequirementUseCase;
+import dev.nicolas.JobTracker.application.usecases.jobRequirement.update.UpdateJobRequirementUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import dev.nicolas.JobTracker.interfaces.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
@@ -18,12 +20,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -44,6 +48,9 @@ class JobRequirementControllerTest {
 
     @MockitoBean
     private DeleteJobRequirementUseCase deleteJobRequirementUseCase;
+
+    @MockitoBean
+    private UpdateJobRequirementUseCase updateJobRequirementUseCase;
 
     @Test
     void shouldCreateJobRequirement() throws Exception {
@@ -134,6 +141,32 @@ class JobRequirementControllerTest {
 
         mockMvc.perform(delete("/api/v1/job-requirements/{id}", id))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldUpdateJobRequirement() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        UUID skillId = UUID.randomUUID();
+
+        when(updateJobRequirementUseCase.execute(eq(id), any(UpdateJobRequirementRequest.class)))
+                .thenReturn(new JobRequirementResponse(id, jobId, skillId, false, 5, 4));
+
+        mockMvc.perform(patch("/api/v1/job-requirements/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "skillId": "%s",
+                                  "mustHave": false,
+                                  "desiredLevel": 5,
+                                  "weight": 4
+                                }
+                                """.formatted(skillId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.skillId").value(skillId.toString()))
+                .andExpect(jsonPath("$.mustHave").value(false))
+                .andExpect(jsonPath("$.desiredLevel").value(5))
+                .andExpect(jsonPath("$.weight").value(4));
     }
 
     @Test
