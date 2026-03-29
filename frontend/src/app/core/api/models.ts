@@ -92,6 +92,13 @@ export interface CreateJobRequirementRequest {
   weight: number;
 }
 
+export interface UpdateJobRequirementRequest {
+  skillId: UUID;
+  mustHave: boolean;
+  desiredLevel: number;
+  weight: number;
+}
+
 export interface JobRequirementResponse {
   id: UUID;
   jobId: UUID;
@@ -124,6 +131,12 @@ export interface CreateStageRequest {
   deadlineAt?: string | null;
 }
 
+export interface UpdateStageRequest {
+  name: string;
+  orderIndex: number;
+  deadlineAt?: string | null;
+}
+
 export interface StageResponse {
   id: UUID;
   applicationId: UUID;
@@ -144,6 +157,11 @@ export interface CompleteStageRequest {
 
 export interface CreateNoteRequest {
   applicationId: UUID;
+  stageId?: UUID | null;
+  content: string;
+}
+
+export interface UpdateNoteRequest {
   stageId?: UUID | null;
   content: string;
 }

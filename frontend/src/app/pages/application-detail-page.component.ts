@@ -18,6 +18,9 @@ import {
   NoteResponse,
   SkillResponse,
   StageResponse,
+  UpdateJobRequirementRequest,
+  UpdateNoteRequest,
+  UpdateStageRequest,
   UUID,
 } from '../core/api/models';
 
@@ -66,6 +69,12 @@ export class ApplicationDetailPageComponent {
   protected readonly skills = signal<SkillResponse[]>([]);
 
   protected readonly statusOptions = APPLICATION_STATUSES;
+
+  protected readonly editingRequirementId = signal<UUID | null>(null);
+
+  protected readonly editingNoteId = signal<UUID | null>(null);
+
+  protected readonly editingStageId = signal<UUID | null>(null);
 
   protected readonly sortedStages = computed(() =>
     [...this.stages()].sort((left, right) => left.orderIndex - right.orderIndex),
@@ -239,7 +248,7 @@ export class ApplicationDetailPageComponent {
     });
   }
 
-  protected createRequirement(): void {
+  protected submitRequirement(): void {
     const application = this.application();
 
     if (!application || this.requirementForm.invalid) {
@@ -256,18 +265,47 @@ export class ApplicationDetailPageComponent {
       weight: Number(value.weight),
     };
 
+    const editingRequirementId = this.editingRequirementId();
+
+    if (editingRequirementId) {
+      const updateRequest: UpdateJobRequirementRequest = {
+        skillId: request.skillId,
+        mustHave: request.mustHave,
+        desiredLevel: request.desiredLevel,
+        weight: request.weight,
+      };
+
+      this.runMutation(
+        this.api.updateJobRequirement(editingRequirementId, updateRequest),
+        'Requisito atualizado.',
+        () => {
+          this.clearRequirementEditing();
+        },
+      );
+      return;
+    }
+
     this.runMutation(
       this.api.createJobRequirement(request),
       'Requisito adicionado a esta vaga.',
       () => {
-        this.requirementForm.patchValue({
-          skillId: '',
-          mustHave: true,
-          desiredLevel: 3,
-          weight: 3,
-        });
+        this.resetRequirementForm();
       },
     );
+  }
+
+  protected editRequirement(requirement: JobRequirementResponse): void {
+    this.editingRequirementId.set(requirement.id);
+    this.requirementForm.setValue({
+      skillId: requirement.skillId,
+      mustHave: requirement.mustHave,
+      desiredLevel: requirement.desiredLevel,
+      weight: requirement.weight,
+    });
+  }
+
+  protected cancelRequirementEditing(): void {
+    this.clearRequirementEditing();
   }
 
   protected deleteRequirement(requirement: JobRequirementResponse): void {
@@ -296,7 +334,7 @@ export class ApplicationDetailPageComponent {
     );
   }
 
-  protected createNote(): void {
+  protected submitNote(): void {
     const application = this.application();
 
     if (!application || this.noteForm.invalid) {
@@ -311,9 +349,35 @@ export class ApplicationDetailPageComponent {
       content: value.content,
     };
 
+    const editingNoteId = this.editingNoteId();
+
+    if (editingNoteId) {
+      const updateRequest: UpdateNoteRequest = {
+        stageId: request.stageId,
+        content: request.content,
+      };
+
+      this.runMutation(this.api.updateNote(editingNoteId, updateRequest), 'Nota atualizada.', () => {
+        this.clearNoteEditing();
+      });
+      return;
+    }
+
     this.runMutation(this.api.createNote(request), 'Nota registrada no histórico.', () => {
-      this.noteForm.reset({ content: '', stageId: '' });
+      this.resetNoteForm();
     });
+  }
+
+  protected editNote(note: NoteResponse): void {
+    this.editingNoteId.set(note.id);
+    this.noteForm.setValue({
+      content: note.content,
+      stageId: note.stageId ?? '',
+    });
+  }
+
+  protected cancelNoteEditing(): void {
+    this.clearNoteEditing();
   }
 
   protected deleteNote(note: NoteResponse): void {
@@ -328,7 +392,7 @@ export class ApplicationDetailPageComponent {
     this.runMutation(this.api.deleteNote(note.id), 'Nota removida do histórico.');
   }
 
-  protected createStage(): void {
+  protected submitStage(): void {
     const application = this.application();
 
     if (!application || this.stageForm.invalid) {
@@ -344,13 +408,37 @@ export class ApplicationDetailPageComponent {
       deadlineAt: value.deadlineAt ? `${value.deadlineAt}:00` : null,
     };
 
-    this.runMutation(this.api.createStage(request), 'Etapa adicionada ao processo.', () => {
-      this.stageForm.reset({
-        name: '',
-        orderIndex: this.sortedStages().length + 2,
-        deadlineAt: '',
+    const editingStageId = this.editingStageId();
+
+    if (editingStageId) {
+      const updateRequest: UpdateStageRequest = {
+        name: request.name,
+        orderIndex: request.orderIndex,
+        deadlineAt: request.deadlineAt,
+      };
+
+      this.runMutation(this.api.updateStage(editingStageId, updateRequest), 'Etapa atualizada.', () => {
+        this.clearStageEditing();
       });
+      return;
+    }
+
+    this.runMutation(this.api.createStage(request), 'Etapa adicionada ao processo.', () => {
+      this.resetStageForm();
     });
+  }
+
+  protected editStage(stage: StageResponse): void {
+    this.editingStageId.set(stage.id);
+    this.stageForm.setValue({
+      name: stage.name,
+      orderIndex: stage.orderIndex,
+      deadlineAt: toDateTimeLocalValue(stage.deadlineAt),
+    });
+  }
+
+  protected cancelStageEditing(): void {
+    this.clearStageEditing();
   }
 
   protected deleteStage(stage: StageResponse): void {
@@ -459,6 +547,42 @@ export class ApplicationDetailPageComponent {
     return 'message message-info';
   }
 
+  private clearRequirementEditing(): void {
+    this.editingRequirementId.set(null);
+    this.resetRequirementForm();
+  }
+
+  private resetRequirementForm(): void {
+    this.requirementForm.reset({
+      skillId: '',
+      mustHave: true,
+      desiredLevel: 3,
+      weight: 3,
+    });
+  }
+
+  private clearNoteEditing(): void {
+    this.editingNoteId.set(null);
+    this.resetNoteForm();
+  }
+
+  private resetNoteForm(): void {
+    this.noteForm.reset({ content: '', stageId: '' });
+  }
+
+  private clearStageEditing(): void {
+    this.editingStageId.set(null);
+    this.resetStageForm();
+  }
+
+  private resetStageForm(): void {
+    this.stageForm.reset({
+      name: '',
+      orderIndex: this.sortedStages().length + 1,
+      deadlineAt: '',
+    });
+  }
+
   private runMutation(
     request$: Observable<unknown>,
     successMessage: string,
@@ -493,4 +617,8 @@ function toApiDateTime(date: Date): string {
   )}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
     date.getSeconds(),
   )}`;
+}
+
+function toDateTimeLocalValue(value: string | null): string {
+  return value ? value.slice(0, 16) : '';
 }
