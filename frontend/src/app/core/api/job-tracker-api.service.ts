@@ -20,6 +20,9 @@ import {
   StageResponse,
   StartStageRequest,
   UpdateApplicationStatusRequest,
+  UpdateJobRequirementRequest,
+  UpdateNoteRequest,
+  UpdateStageRequest,
   UserSkillResponse,
   UUID,
 } from './models';
@@ -49,6 +52,16 @@ export class JobTrackerApiService {
   ): Observable<JobRequirementResponse> {
     return this.http.post<JobRequirementResponse>(
       `${this.baseUrl}/job-requirements`,
+      request,
+    );
+  }
+
+  updateJobRequirement(
+    id: UUID,
+    request: UpdateJobRequirementRequest,
+  ): Observable<JobRequirementResponse> {
+    return this.http.patch<JobRequirementResponse>(
+      `${this.baseUrl}/job-requirements/${id}`,
       request,
     );
   }
@@ -116,6 +129,10 @@ export class JobTrackerApiService {
     return this.http.post<StageResponse>(`${this.baseUrl}/stages`, request);
   }
 
+  updateStage(id: UUID, request: UpdateStageRequest): Observable<StageResponse> {
+    return this.http.patch<StageResponse>(`${this.baseUrl}/stages/${id}`, request);
+  }
+
   deleteStage(id: UUID): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/stages/${id}`);
   }
@@ -145,6 +162,10 @@ export class JobTrackerApiService {
 
   createNote(request: CreateNoteRequest): Observable<NoteResponse> {
     return this.http.post<NoteResponse>(`${this.baseUrl}/notes`, request);
+  }
+
+  updateNote(id: UUID, request: UpdateNoteRequest): Observable<NoteResponse> {
+    return this.http.patch<NoteResponse>(`${this.baseUrl}/notes/${id}`, request);
   }
 
   deleteNote(id: UUID): Observable<void> {

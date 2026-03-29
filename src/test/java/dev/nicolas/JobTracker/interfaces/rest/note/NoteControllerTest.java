@@ -1,9 +1,11 @@
 package dev.nicolas.JobTracker.interfaces.rest.note;
 
 import dev.nicolas.JobTracker.application.dto.note.NoteResponse;
+import dev.nicolas.JobTracker.application.dto.note.UpdateNoteRequest;
 import dev.nicolas.JobTracker.application.usecases.note.create.CreateNoteUseCase;
 import dev.nicolas.JobTracker.application.usecases.note.delete.DeleteNoteUseCase;
 import dev.nicolas.JobTracker.application.usecases.note.get.GetNoteUseCase;
+import dev.nicolas.JobTracker.application.usecases.note.update.UpdateNoteUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import dev.nicolas.JobTracker.interfaces.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
@@ -19,12 +21,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -45,6 +49,9 @@ class NoteControllerTest {
 
     @MockitoBean
     private DeleteNoteUseCase deleteNoteUseCase;
+
+    @MockitoBean
+    private UpdateNoteUseCase updateNoteUseCase;
 
     @Test
     void shouldCreateNote() throws Exception {
@@ -133,6 +140,29 @@ class NoteControllerTest {
 
         mockMvc.perform(delete("/api/v1/notes/{id}", id))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldUpdateNote() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        UUID stageId = UUID.randomUUID();
+        LocalDateTime createdAt = LocalDateTime.now();
+
+        when(updateNoteUseCase.execute(eq(id), any(UpdateNoteRequest.class)))
+                .thenReturn(new NoteResponse(id, applicationId, stageId, "Conteúdo atualizado", createdAt));
+
+        mockMvc.perform(patch("/api/v1/notes/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "stageId": "%s",
+                                  "content": "Conteúdo atualizado"
+                                }
+                                """.formatted(stageId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stageId").value(stageId.toString()))
+                .andExpect(jsonPath("$.content").value("Conteúdo atualizado"));
     }
 
     @Test

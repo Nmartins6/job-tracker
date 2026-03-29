@@ -4,11 +4,13 @@ import dev.nicolas.JobTracker.application.dto.stage.CompleteStageRequest;
 import dev.nicolas.JobTracker.application.dto.stage.CreateStageRequest;
 import dev.nicolas.JobTracker.application.dto.stage.StartStageRequest;
 import dev.nicolas.JobTracker.application.dto.stage.StageResponse;
+import dev.nicolas.JobTracker.application.dto.stage.UpdateStageRequest;
 import dev.nicolas.JobTracker.application.usecases.stage.complete.CompleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.create.CreateStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.delete.DeleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.get.GetStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.start.StartStageUseCase;
+import dev.nicolas.JobTracker.application.usecases.stage.update.UpdateStageUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,17 +35,20 @@ public class StageController {
     private final StartStageUseCase startStageUseCase;
     private final CompleteStageUseCase completeStageUseCase;
     private final DeleteStageUseCase deleteStageUseCase;
+    private final UpdateStageUseCase updateStageUseCase;
 
     public StageController(CreateStageUseCase createStageUseCase,
                            GetStageUseCase getStageUseCase,
                            StartStageUseCase startStageUseCase,
                            CompleteStageUseCase completeStageUseCase,
-                           DeleteStageUseCase deleteStageUseCase) {
+                           DeleteStageUseCase deleteStageUseCase,
+                           UpdateStageUseCase updateStageUseCase) {
         this.createStageUseCase = createStageUseCase;
         this.getStageUseCase = getStageUseCase;
         this.startStageUseCase = startStageUseCase;
         this.completeStageUseCase = completeStageUseCase;
         this.deleteStageUseCase = deleteStageUseCase;
+        this.updateStageUseCase = updateStageUseCase;
     }
 
     @PostMapping("/stages")
@@ -72,6 +77,12 @@ public class StageController {
     public ResponseEntity<StageResponse> completeStage(@PathVariable UUID id,
                                                        @Valid @RequestBody CompleteStageRequest request) {
         return ResponseEntity.ok(completeStageUseCase.execute(id, request));
+    }
+
+    @PatchMapping("/stages/{id}")
+    public ResponseEntity<StageResponse> updateStage(@PathVariable UUID id,
+                                                     @Valid @RequestBody UpdateStageRequest request) {
+        return ResponseEntity.ok(updateStageUseCase.execute(id, request));
     }
 
     @DeleteMapping("/stages/{id}")

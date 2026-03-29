@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.nicolas.JobTracker.application.dto.stage.CompleteStageRequest;
 import dev.nicolas.JobTracker.application.dto.stage.StageResponse;
 import dev.nicolas.JobTracker.application.dto.stage.StartStageRequest;
+import dev.nicolas.JobTracker.application.dto.stage.UpdateStageRequest;
 import dev.nicolas.JobTracker.application.usecases.stage.complete.CompleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.create.CreateStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.delete.DeleteStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.get.GetStageUseCase;
 import dev.nicolas.JobTracker.application.usecases.stage.start.StartStageUseCase;
+import dev.nicolas.JobTracker.application.usecases.stage.update.UpdateStageUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import dev.nicolas.JobTracker.interfaces.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
@@ -61,6 +63,9 @@ class StageControllerTest {
 
     @MockitoBean
     private DeleteStageUseCase deleteStageUseCase;
+
+    @MockitoBean
+    private UpdateStageUseCase updateStageUseCase;
 
     @Test
     void shouldCreateStage() throws Exception {
@@ -183,6 +188,26 @@ class StageControllerTest {
 
         mockMvc.perform(delete("/api/v1/stages/{id}", id))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldUpdateStage() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID applicationId = UUID.randomUUID();
+        LocalDateTime deadlineAt = LocalDateTime.of(2026, 3, 30, 18, 0);
+        UpdateStageRequest request = new UpdateStageRequest("Technical Interview", 2, deadlineAt);
+
+        when(updateStageUseCase.execute(eq(id), any(UpdateStageRequest.class))).thenReturn(
+                new StageResponse(id, applicationId, "Technical Interview", 2, null, null, deadlineAt)
+        );
+
+        mockMvc.perform(patch("/api/v1/stages/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Technical Interview"))
+                .andExpect(jsonPath("$.orderIndex").value(2))
+                .andExpect(jsonPath("$.deadlineAt").value("2026-03-30T18:00:00"));
     }
 
     @Test

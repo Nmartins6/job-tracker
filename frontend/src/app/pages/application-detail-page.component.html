@@ -150,7 +150,7 @@
           </div>
         </div>
 
-        <form class="stack" [formGroup]="requirementForm" (ngSubmit)="createRequirement()">
+        <form class="stack" [formGroup]="requirementForm" (ngSubmit)="submitRequirement()">
           <div class="field-group">
             <label for="requirement-skill">Skill</label>
             <select class="select" id="requirement-skill" formControlName="skillId">
@@ -191,9 +191,21 @@
             <span>Obrigatorio para considerar a vaga aderente</span>
           </label>
 
-          <button class="button" type="submit" [disabled]="isSubmitting()">
-            Adicionar requisito
-          </button>
+          <div class="button-row">
+            <button class="button" type="submit" [disabled]="isSubmitting()">
+              {{ editingRequirementId() ? 'Salvar requisito' : 'Adicionar requisito' }}
+            </button>
+            @if (editingRequirementId()) {
+              <button
+                class="button button-secondary"
+                type="button"
+                [disabled]="isSubmitting()"
+                (click)="cancelRequirementEditing()"
+              >
+                Cancelar edicao
+              </button>
+            }
+          </div>
         </form>
 
         @if (sortedRequirements().length === 0) {
@@ -210,6 +222,14 @@
                     <span [class]="requirement.mustHave ? 'status-pill status-active' : 'status-pill status-withdrawn'">
                       {{ requirement.mustHave ? 'Must-have' : 'Opcional' }}
                     </span>
+                    <button
+                      class="button button-secondary"
+                      type="button"
+                      [disabled]="isSubmitting()"
+                      (click)="editRequirement(requirement)"
+                    >
+                      Editar
+                    </button>
                     <button
                       class="button button-danger"
                       type="button"
@@ -240,7 +260,7 @@
           </div>
         </div>
 
-        <form class="stack" [formGroup]="stageForm" (ngSubmit)="createStage()">
+        <form class="stack" [formGroup]="stageForm" (ngSubmit)="submitStage()">
           <div class="field-group">
             <label for="stage-name">Nome da etapa</label>
             <input class="field" id="stage-name" type="text" formControlName="name" />
@@ -258,7 +278,21 @@
             </div>
           </div>
 
-          <button class="button" type="submit" [disabled]="isSubmitting()">Adicionar etapa</button>
+          <div class="button-row">
+            <button class="button" type="submit" [disabled]="isSubmitting()">
+              {{ editingStageId() ? 'Salvar etapa' : 'Adicionar etapa' }}
+            </button>
+            @if (editingStageId()) {
+              <button
+                class="button button-secondary"
+                type="button"
+                [disabled]="isSubmitting()"
+                (click)="cancelStageEditing()"
+              >
+                Cancelar edicao
+              </button>
+            }
+          </div>
         </form>
 
         @if (sortedStages().length === 0) {
@@ -277,6 +311,14 @@
                   {{ stage.completedAt ? (stage.completedAt | date: 'short') : 'pendente' }}
                 </p>
                 <div class="button-row">
+                  <button
+                    class="button button-secondary"
+                    type="button"
+                    [disabled]="isSubmitting()"
+                    (click)="editStage(stage)"
+                  >
+                    Editar
+                  </button>
                   <button
                     class="button button-secondary"
                     type="button"
@@ -318,7 +360,7 @@
           </div>
         </div>
 
-        <form class="stack" [formGroup]="noteForm" (ngSubmit)="createNote()">
+        <form class="stack" [formGroup]="noteForm" (ngSubmit)="submitNote()">
           <div class="field-group">
             <label for="note-stage">Etapa vinculada</label>
             <select class="select" id="note-stage" formControlName="stageId">
@@ -334,7 +376,21 @@
             <textarea class="textarea" id="note-content" formControlName="content"></textarea>
           </div>
 
-          <button class="button" type="submit" [disabled]="isSubmitting()">Adicionar nota</button>
+          <div class="button-row">
+            <button class="button" type="submit" [disabled]="isSubmitting()">
+              {{ editingNoteId() ? 'Salvar nota' : 'Adicionar nota' }}
+            </button>
+            @if (editingNoteId()) {
+              <button
+                class="button button-secondary"
+                type="button"
+                [disabled]="isSubmitting()"
+                (click)="cancelNoteEditing()"
+              >
+                Cancelar edicao
+              </button>
+            }
+          </div>
         </form>
 
         @if (notes().length === 0) {
@@ -349,6 +405,14 @@
                   </strong>
                   <div class="button-row">
                     <span class="muted">{{ note.createdAt | date: 'short' }}</span>
+                    <button
+                      class="button button-secondary"
+                      type="button"
+                      [disabled]="isSubmitting()"
+                      (click)="editNote(note)"
+                    >
+                      Editar
+                    </button>
                     <button
                       class="button button-danger"
                       type="button"
