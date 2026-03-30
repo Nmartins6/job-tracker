@@ -13,4 +13,6 @@ public interface UserSkillRepository {
     List<UserSkill> findByUserId(UUID userId);
 
     Optional<UserSkill> findByUserIdAndSkillId(UUID userId, UUID skillId);
+
+    void deleteById(UUID id);
 }

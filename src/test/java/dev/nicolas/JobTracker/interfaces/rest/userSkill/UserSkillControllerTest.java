@@ -2,7 +2,9 @@ package dev.nicolas.JobTracker.interfaces.rest.userSkill;
 
 import dev.nicolas.JobTracker.application.dto.userSkill.UserSkillResponse;
 import dev.nicolas.JobTracker.application.usecases.userSkill.create.CreateUserSkillUseCase;
+import dev.nicolas.JobTracker.application.usecases.userSkill.delete.DeleteUserSkillUseCase;
 import dev.nicolas.JobTracker.application.usecases.userSkill.get.GetUserSkillUseCase;
+import dev.nicolas.JobTracker.application.usecases.userSkill.update.UpdateUserSkillUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
 import dev.nicolas.JobTracker.interfaces.rest.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
@@ -18,8 +20,12 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -37,6 +43,12 @@ class UserSkillControllerTest {
 
     @MockitoBean
     private GetUserSkillUseCase getUserSkillUseCase;
+
+    @MockitoBean
+    private UpdateUserSkillUseCase updateUserSkillUseCase;
+
+    @MockitoBean
+    private DeleteUserSkillUseCase deleteUserSkillUseCase;
 
     @Test
     void shouldCreateUserSkill() throws Exception {
@@ -97,8 +109,52 @@ class UserSkillControllerTest {
     }
 
     @Test
+    void shouldUpdateUserSkill() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID skillId = UUID.randomUUID();
+
+        when(updateUserSkillUseCase.execute(eq(id), any())).thenReturn(
+                new UserSkillResponse(id, userId, skillId, 6, 5)
+        );
+
+        mockMvc.perform(patch("/api/v1/user-skills/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "skillId": "%s",
+                                  "yearsExperience": 6,
+                                  "level": 5
+                                }
+                                """.formatted(skillId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.yearsExperience").value(6))
+                .andExpect(jsonPath("$.level").value(5));
+    }
+
+    @Test
+    void shouldDeleteUserSkill() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doNothing().when(deleteUserSkillUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/user-skills/{id}", id))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void shouldReturnBadRequestWhenCreatingUserSkillWithMissingFields() throws Exception {
         mockMvc.perform(post("/api/v1/user-skills")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Validation Error"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatingUserSkillWithMissingFields() throws Exception {
+        mockMvc.perform(patch("/api/v1/user-skills/{id}", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())

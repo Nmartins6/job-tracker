@@ -44,4 +44,9 @@ public class UserSkillRepositoryImplement implements UserSkillRepository {
     public Optional<UserSkill> findByUserIdAndSkillId(UUID userId, UUID skillId) {
         return userSkillJpaRepository.findByUserIdAndSkillId(userId, skillId).map(mapper::toDomain);
     }
+
+    @Override
+    public void deleteById(UUID id) {
+        userSkillJpaRepository.deleteById(id);
+    }
 }

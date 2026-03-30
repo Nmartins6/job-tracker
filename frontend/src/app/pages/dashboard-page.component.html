@@ -346,6 +346,7 @@
           <h2 class="panel-title">Meu perfil técnico</h2>
           <p class="panel-subtitle">
             Vincule as skills do catálogo ao seu perfil com nível e tempo de experiência.
+            Quando sua bagagem mudar, ajuste por aqui sem perder contexto.
           </p>
         </div>
       </div>
@@ -383,9 +384,26 @@
           </div>
         </div>
 
-        <button class="button" type="submit" [disabled]="!knownUserId()">
-          Vincular ao meu perfil
-        </button>
+        <div class="button-row">
+          <button class="button" type="submit" [disabled]="!knownUserId() || isSavingUserSkill()">
+            @if (isSavingUserSkill()) {
+              {{ editingUserSkillId() ? 'Salvando skill...' : 'Vinculando skill...' }}
+            } @else {
+              {{ editingUserSkillId() ? 'Salvar skill do perfil' : 'Vincular ao meu perfil' }}
+            }
+          </button>
+
+          @if (editingUserSkillId()) {
+            <button
+              class="button button-secondary"
+              type="button"
+              [disabled]="isSavingUserSkill()"
+              (click)="cancelUserSkillEditing()"
+            >
+              Cancelar edicao
+            </button>
+          }
+        </div>
       </form>
 
       @if (!knownUserId()) {
@@ -415,7 +433,25 @@
             <div class="list-item">
               <div class="split">
                 <strong>{{ userSkill.skillName }}</strong>
-                <span class="muted">Nivel {{ userSkill.level }}/5</span>
+                <div class="button-row">
+                  <span class="muted">Nivel {{ userSkill.level }}/5</span>
+                  <button
+                    class="button button-secondary"
+                    type="button"
+                    [disabled]="!knownUserId() || isSavingUserSkill()"
+                    (click)="editUserSkill(userSkill)"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    class="button button-danger"
+                    type="button"
+                    [disabled]="!knownUserId() || isSavingUserSkill()"
+                    (click)="deleteUserSkill(userSkill)"
+                  >
+                    Remover
+                  </button>
+                </div>
               </div>
               <p class="muted">
                 {{ userSkill.skillCategory || 'Sem categoria' }} ·
