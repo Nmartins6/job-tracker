@@ -107,7 +107,9 @@
       <div class="panel-head">
         <div>
           <h2 class="panel-title">Nova vaga</h2>
-          <p class="panel-subtitle">Registre a oportunidade que voce quer acompanhar.</p>
+          <p class="panel-subtitle">
+            Registre a oportunidade que voce quer acompanhar e corrija os dados sem precisar recriar tudo.
+          </p>
         </div>
       </div>
 
@@ -144,10 +146,57 @@
           <textarea class="textarea" id="job-description" formControlName="description"></textarea>
         </div>
 
-        <button class="button" type="submit" [disabled]="isCreatingJob()">
-          {{ isCreatingJob() ? 'Salvando vaga...' : 'Salvar vaga' }}
-        </button>
+        <div class="button-row">
+          <button class="button" type="submit" [disabled]="isCreatingJob()">
+            @if (isCreatingJob()) {
+              Salvando vaga...
+            } @else {
+              {{ editingJobId() ? 'Salvar ajustes da vaga' : 'Salvar vaga' }}
+            }
+          </button>
+          @if (editingJobId()) {
+            <button
+              class="button button-secondary"
+              type="button"
+              [disabled]="isCreatingJob()"
+              (click)="cancelJobEditing()"
+            >
+              Cancelar edicao
+            </button>
+          }
+        </div>
       </form>
+
+      @if (sortedJobs().length === 0) {
+        <div class="empty-state">Nenhuma vaga mapeada ainda.</div>
+      } @else {
+        <div class="list">
+          @for (job of sortedJobs(); track job.id) {
+            <div class="list-item stack">
+              <div class="split">
+                <strong>{{ job.company }} · {{ job.title }}</strong>
+                <button
+                  class="button button-secondary"
+                  type="button"
+                  [disabled]="isCreatingJob()"
+                  (click)="editJob(job)"
+                >
+                  Editar
+                </button>
+              </div>
+              <p class="muted">
+                {{ job.seniority || 'Senioridade nao informada' }} ·
+                {{ job.location || 'Local nao informado' }}
+              </p>
+              @if (job.sourceUrl) {
+                <a class="muted" [href]="job.sourceUrl" target="_blank" rel="noreferrer">
+                  Abrir origem da vaga
+                </a>
+              }
+            </div>
+          }
+        </div>
+      }
     </article>
 
     <article class="panel stack" style="grid-column: span 4">
@@ -165,7 +214,7 @@
           <label for="application-job">Vaga</label>
           <select class="select" id="application-job" formControlName="jobId">
             <option value="">Selecione uma vaga</option>
-            @for (job of jobs(); track job.id) {
+            @for (job of sortedJobs(); track job.id) {
               <option [value]="job.id">{{ job.company }} · {{ job.title }}</option>
             }
           </select>
