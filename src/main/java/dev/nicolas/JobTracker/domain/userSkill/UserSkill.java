@@ -51,6 +51,22 @@ public class UserSkill {
         return userSkill;
     }
 
+    public void updateProfile(UUID skillId, Integer yearsExperience, Integer level) {
+        if (skillId == null) {
+            throw new DomainException("Habilidade é obrigatória");
+        }
+        if (yearsExperience == null || yearsExperience < 0) {
+            throw new DomainException("Anos de experiência não pode ser negativo");
+        }
+        if (level == null || level < 1 || level > 5) {
+            throw new DomainException("Nível da habilidade deve estar entre 1 e 5");
+        }
+
+        this.skillId = skillId;
+        this.yearsExperience = yearsExperience;
+        this.level = level;
+    }
+
     public UUID getId() {
         return id;
     }
