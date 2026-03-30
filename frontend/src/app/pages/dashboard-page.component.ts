@@ -17,6 +17,7 @@ import {
   StageResponse,
   UpdateApplicationRequest,
   UpdateJobRequest,
+  UpdateUserSkillRequest,
   UUID,
   UserSkillResponse,
 } from '../core/api/models';
@@ -78,6 +79,10 @@ export class DashboardPageComponent {
   protected readonly editingJobId = signal<UUID | null>(null);
 
   protected readonly editingApplicationId = signal<UUID | null>(null);
+
+  protected readonly editingUserSkillId = signal<UUID | null>(null);
+
+  protected readonly isSavingUserSkill = signal(false);
 
   protected readonly errorMessage = signal<string | null>(null);
 
@@ -459,32 +464,77 @@ export class DashboardPageComponent {
       return;
     }
 
+    this.isSavingUserSkill.set(true);
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
     const value = this.createUserSkillForm.getRawValue();
-    const request: CreateUserSkillRequest = {
-      userId,
+    const editingUserSkillId = this.editingUserSkillId();
+    const request = {
       skillId: value.skillId,
       yearsExperience: Number(value.yearsExperience),
       level: Number(value.level),
     };
+    const operation$ = editingUserSkillId
+      ? this.api.updateUserSkill(editingUserSkillId, request as UpdateUserSkillRequest)
+      : this.api.createUserSkill({
+          userId,
+          ...(request as UpdateUserSkillRequest),
+        } as CreateUserSkillRequest);
 
-    this.api.createUserSkill(request).subscribe({
+    operation$.subscribe({
       next: () => {
-        this.createUserSkillForm.patchValue({
-          skillId: '',
-          yearsExperience: 0,
-          level: 3,
-        });
+        this.isSavingUserSkill.set(false);
+        this.clearUserSkillEditing();
         this.successMessage.set(
-          'Skill vinculada ao seu perfil. O matching agora consegue usar esse dado.',
+          editingUserSkillId
+            ? 'Skill do perfil atualizada com sucesso.'
+            : 'Skill vinculada ao seu perfil. O matching agora consegue usar esse dado.',
         );
         this.loadWorkspace();
       },
       error: (error: unknown) => {
+        this.isSavingUserSkill.set(false);
         this.errorMessage.set(
-          toErrorMessage(error, 'Nao foi possivel vincular a skill ao seu perfil.'),
+          toErrorMessage(
+            error,
+            editingUserSkillId
+              ? 'Nao foi possivel atualizar a skill do perfil.'
+              : 'Nao foi possivel vincular a skill ao seu perfil.',
+          ),
+        );
+      },
+    });
+  }
+
+  protected editUserSkill(userSkill: UserSkillResponse): void {
+    this.editingUserSkillId.set(userSkill.id);
+    this.createUserSkillForm.setValue({
+      skillId: userSkill.skillId,
+      yearsExperience: userSkill.yearsExperience,
+      level: userSkill.level,
+    });
+  }
+
+  protected cancelUserSkillEditing(): void {
+    this.clearUserSkillEditing();
+  }
+
+  protected deleteUserSkill(userSkill: UserSkillCard): void {
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.api.deleteUserSkill(userSkill.id).subscribe({
+      next: () => {
+        if (this.editingUserSkillId() === userSkill.id) {
+          this.clearUserSkillEditing();
+        }
+        this.successMessage.set(`Skill "${userSkill.skillName}" removida do seu perfil.`);
+        this.loadWorkspace();
+      },
+      error: (error: unknown) => {
+        this.errorMessage.set(
+          toErrorMessage(error, 'Nao foi possivel remover a skill do seu perfil.'),
         );
       },
     });
@@ -537,6 +587,15 @@ export class DashboardPageComponent {
       userId: this.knownUserId() ?? '',
       jobId: '',
       status: 'ACTIVE',
+    });
+  }
+
+  private clearUserSkillEditing(): void {
+    this.editingUserSkillId.set(null);
+    this.createUserSkillForm.reset({
+      skillId: '',
+      yearsExperience: 0,
+      level: 3,
     });
   }
 

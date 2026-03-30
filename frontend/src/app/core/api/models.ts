@@ -85,6 +85,12 @@ export interface CreateUserSkillRequest {
   level: number;
 }
 
+export interface UpdateUserSkillRequest {
+  skillId: UUID;
+  yearsExperience: number;
+  level: number;
+}
+
 export interface UserSkillResponse {
   id: UUID;
   userId: UUID;

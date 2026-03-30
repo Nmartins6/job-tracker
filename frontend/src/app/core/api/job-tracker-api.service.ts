@@ -25,6 +25,7 @@ import {
   UpdateJobRequirementRequest,
   UpdateNoteRequest,
   UpdateStageRequest,
+  UpdateUserSkillRequest,
   UserSkillResponse,
   UUID,
 } from './models';
@@ -90,6 +91,20 @@ export class JobTrackerApiService {
 
   createUserSkill(request: CreateUserSkillRequest): Observable<UserSkillResponse> {
     return this.http.post<UserSkillResponse>(`${this.baseUrl}/user-skills`, request);
+  }
+
+  updateUserSkill(
+    id: UUID,
+    request: UpdateUserSkillRequest,
+  ): Observable<UserSkillResponse> {
+    return this.http.patch<UserSkillResponse>(
+      `${this.baseUrl}/user-skills/${id}`,
+      request,
+    );
+  }
+
+  deleteUserSkill(id: UUID): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/user-skills/${id}`);
   }
 
   getApplications(): Observable<ApplicationResponse[]> {
