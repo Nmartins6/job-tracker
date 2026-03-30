@@ -122,6 +122,12 @@ export interface CreateApplicationRequest {
   jobId: UUID;
 }
 
+export interface UpdateApplicationRequest {
+  userId: UUID;
+  jobId: UUID;
+  status: ApplicationStatus;
+}
+
 export interface ApplicationResponse {
   id: UUID;
   userId: UUID;

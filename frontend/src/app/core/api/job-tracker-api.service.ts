@@ -19,6 +19,7 @@ import {
   SkillResponse,
   StageResponse,
   StartStageRequest,
+  UpdateApplicationRequest,
   UpdateApplicationStatusRequest,
   UpdateJobRequest,
   UpdateJobRequirementRequest,
@@ -114,6 +115,16 @@ export class JobTrackerApiService {
   ): Observable<ApplicationResponse> {
     return this.http.patch<ApplicationResponse>(
       `${this.baseUrl}/applications/${id}/status`,
+      request,
+    );
+  }
+
+  updateApplication(
+    id: UUID,
+    request: UpdateApplicationRequest,
+  ): Observable<ApplicationResponse> {
+    return this.http.patch<ApplicationResponse>(
+      `${this.baseUrl}/applications/${id}`,
       request,
     );
   }

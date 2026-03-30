@@ -15,6 +15,7 @@ import {
   JobResponse,
   SkillResponse,
   StageResponse,
+  UpdateApplicationRequest,
   UpdateJobRequest,
   UUID,
   UserSkillResponse,
@@ -46,6 +47,8 @@ interface ApplicationCard extends ApplicationResponse {
   location: string | null;
   seniority: string | null;
   stageAttention: StageAttention;
+  nextActionTitle: string;
+  nextActionSummary: string;
 }
 
 interface UserSkillCard extends UserSkillResponse {
@@ -73,6 +76,8 @@ export class DashboardPageComponent {
   protected readonly isCreatingApplication = signal(false);
 
   protected readonly editingJobId = signal<UUID | null>(null);
+
+  protected readonly editingApplicationId = signal<UUID | null>(null);
 
   protected readonly errorMessage = signal<string | null>(null);
 
@@ -117,6 +122,9 @@ export class DashboardPageComponent {
     return this.applications()
       .map((application) => {
         const job = jobsById.get(application.jobId);
+        const stageAttention = this.buildStageAttention(
+          stagesByApplicationId[application.id] ?? [],
+        );
 
         return {
           ...application,
@@ -124,7 +132,8 @@ export class DashboardPageComponent {
           title: job?.title ?? 'Vaga sem titulo',
           location: job?.location ?? null,
           seniority: job?.seniority ?? null,
-          stageAttention: this.buildStageAttention(stagesByApplicationId[application.id] ?? []),
+          stageAttention,
+          ...this.buildNextAction(application.status, stageAttention),
         };
       })
       .sort((left, right) => this.compareApplications(left, right));
@@ -223,6 +232,7 @@ export class DashboardPageComponent {
   protected readonly createApplicationForm = this.fb.nonNullable.group({
     userId: [this.knownUserId() ?? '', [Validators.required]],
     jobId: ['', [Validators.required]],
+    status: ['ACTIVE' as ApplicationStatus, [Validators.required]],
   });
 
   constructor() {
@@ -390,29 +400,48 @@ export class DashboardPageComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    this.api
-      .createApplication(
-        this.createApplicationForm.getRawValue() as CreateApplicationRequest,
-      )
-      .subscribe({
+    const value = this.createApplicationForm.getRawValue();
+    const editingApplicationId = this.editingApplicationId();
+    const operation$ = editingApplicationId
+      ? this.api.updateApplication(editingApplicationId, value as UpdateApplicationRequest)
+      : this.api.createApplication(value as CreateApplicationRequest);
+
+    operation$.subscribe({
         next: () => {
           this.isCreatingApplication.set(false);
-          this.createApplicationForm.patchValue({
-            jobId: '',
-            userId: this.knownUserId() ?? this.createApplicationForm.getRawValue().userId,
-          });
+          this.clearApplicationEditing();
           this.successMessage.set(
-            'Candidatura registrada. Abra o detalhe para acompanhar o andamento.',
+            editingApplicationId
+              ? 'Candidatura atualizada com sucesso.'
+              : 'Candidatura registrada. Abra o detalhe para acompanhar o andamento.',
           );
           this.loadWorkspace();
         },
         error: (error: unknown) => {
           this.isCreatingApplication.set(false);
           this.errorMessage.set(
-            toErrorMessage(error, 'Nao foi possivel registrar a candidatura.'),
+            toErrorMessage(
+              error,
+              editingApplicationId
+                ? 'Nao foi possivel atualizar a candidatura.'
+                : 'Nao foi possivel registrar a candidatura.',
+            ),
           );
         },
       });
+  }
+
+  protected editApplication(application: ApplicationResponse): void {
+    this.editingApplicationId.set(application.id);
+    this.createApplicationForm.setValue({
+      userId: application.userId,
+      jobId: application.jobId,
+      status: application.status,
+    });
+  }
+
+  protected cancelApplicationEditing(): void {
+    this.clearApplicationEditing();
   }
 
   protected submitUserSkill(): void {
@@ -502,6 +531,15 @@ export class DashboardPageComponent {
     });
   }
 
+  private clearApplicationEditing(): void {
+    this.editingApplicationId.set(null);
+    this.createApplicationForm.reset({
+      userId: this.knownUserId() ?? '',
+      jobId: '',
+      status: 'ACTIVE',
+    });
+  }
+
   private buildStageAttention(stages: StageResponse[]): StageAttention {
     const pendingStages = [...stages]
       .filter((stage) => !stage.completedAt)
@@ -582,6 +620,74 @@ export class DashboardPageComponent {
       urgencyWeight: 4,
       summary: `${nextStage.name} ${deadlineLabel} (${formattedDeadline}).`,
     };
+  }
+
+  private buildNextAction(
+    status: ApplicationStatus,
+    stageAttention: StageAttention,
+  ): Pick<ApplicationCard, 'nextActionTitle' | 'nextActionSummary'> {
+    if (status === 'HIRED') {
+      return {
+        nextActionTitle: 'Fechar ciclo',
+        nextActionSummary:
+          'Registrar os aprendizados finais, consolidar a historia e arquivar a candidatura como conquista.',
+      };
+    }
+
+    if (status === 'REJECTED') {
+      return {
+        nextActionTitle: 'Registrar feedback',
+        nextActionSummary:
+          'Anote o que aprendeu com esta rejeicao e mantenha o historico para ajustar as proximas candidaturas.',
+      };
+    }
+
+    if (status === 'WITHDRAWN') {
+      return {
+        nextActionTitle: 'Documentar desistência',
+        nextActionSummary:
+          'Vale registrar por que voce saiu do processo para nao perder contexto depois.',
+      };
+    }
+
+    switch (stageAttention.urgency) {
+      case 'overdue':
+        return {
+          nextActionTitle: 'Retomar agora',
+          nextActionSummary:
+            'O prazo da proxima etapa ja venceu. Atualize a etapa, cobre retorno ou redefina o plano desta candidatura.',
+        };
+      case 'soon':
+        return {
+          nextActionTitle: 'Preparar entrega',
+          nextActionSummary:
+            'A proxima etapa vence nos proximos dias. Priorize preparacao, revisao de materiais e confirmacao do horario.',
+        };
+      case 'unscheduled':
+        return {
+          nextActionTitle: 'Planejar proximo passo',
+          nextActionSummary:
+            'Defina a proxima etapa ou atribua um prazo para evitar que a candidatura fique sem direcao.',
+        };
+      case 'started':
+        return {
+          nextActionTitle: 'Atualizar andamento',
+          nextActionSummary:
+            'Existe uma etapa em andamento sem prazo claro. Vale registrar prazo, nota ou novo status para manter o fluxo confiavel.',
+        };
+      case 'upcoming':
+        return {
+          nextActionTitle: 'Manter no radar',
+          nextActionSummary:
+            'A proxima etapa ja esta planejada. Use este espaco para acompanhar preparo, materiais e proximas confirmacoes.',
+        };
+      default:
+        return {
+          nextActionTitle: 'Revisar historico',
+          nextActionSummary:
+            'Confira se as notas e etapas representam bem o momento atual antes de seguir para a proxima movimentacao.',
+        };
+    }
   }
 
   private compareApplications(left: ApplicationCard, right: ApplicationCard): number {

@@ -2,6 +2,7 @@ package dev.nicolas.JobTracker.interfaces.rest.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.nicolas.JobTracker.application.dto.application.ApplicationResponse;
+import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationRequest;
 import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationStatusRequest;
 import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryEventResponse;
 import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryEventType;
@@ -9,6 +10,7 @@ import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryResponse
 import dev.nicolas.JobTracker.application.usecases.application.create.CreateApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.get.GetApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.history.GetApplicationHistoryUseCase;
+import dev.nicolas.JobTracker.application.usecases.application.update.UpdateApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.update.UpdateApplicationStatusUseCase;
 import dev.nicolas.JobTracker.domain.application.ApplicationStatus;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
@@ -54,6 +56,9 @@ class ApplicationControllerTest {
 
     @MockitoBean
     private GetApplicationHistoryUseCase getApplicationHistoryUseCase;
+
+    @MockitoBean
+    private UpdateApplicationUseCase updateApplicationUseCase;
 
     @MockitoBean
     private UpdateApplicationStatusUseCase updateApplicationStatusUseCase;
@@ -169,8 +174,36 @@ class ApplicationControllerTest {
     }
 
     @Test
+    void shouldUpdateApplicationTracking() throws Exception {
+        UUID id = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID jobId = UUID.randomUUID();
+        UpdateApplicationRequest request = new UpdateApplicationRequest(userId, jobId, ApplicationStatus.WITHDRAWN);
+
+        when(updateApplicationUseCase.execute(eq(id), any(UpdateApplicationRequest.class))).thenReturn(
+                new ApplicationResponse(id, userId, jobId, ApplicationStatus.WITHDRAWN)
+        );
+
+        mockMvc.perform(patch("/api/v1/applications/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobId").value(jobId.toString()))
+                .andExpect(jsonPath("$.status").value("WITHDRAWN"));
+    }
+
+    @Test
     void shouldReturnBadRequestWhenCreatingApplicationWithMissingFields() throws Exception {
         mockMvc.perform(post("/api/v1/applications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Validation Error"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenUpdatingApplicationWithMissingFields() throws Exception {
+        mockMvc.perform(patch("/api/v1/applications/{id}", UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())

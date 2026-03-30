@@ -42,6 +42,22 @@ public class Application {
         return application;
     }
 
+    public void updateTracking(UUID userId, UUID jobId, ApplicationStatus status) {
+        if (userId == null) {
+            throw new DomainException("Usuário da candidatura é obrigatório");
+        }
+        if (jobId == null) {
+            throw new DomainException("Vaga da candidatura é obrigatória");
+        }
+        if (status == null) {
+            throw new DomainException("Status da candidatura é obrigatório");
+        }
+
+        this.userId = userId;
+        this.jobId = jobId;
+        this.status = status;
+    }
+
     public void updateStatus(ApplicationStatus status) {
         if (status == null) {
             throw new DomainException("Status da candidatura é obrigatório");
