@@ -2,11 +2,13 @@ package dev.nicolas.JobTracker.interfaces.rest.application;
 
 import dev.nicolas.JobTracker.application.dto.application.ApplicationResponse;
 import dev.nicolas.JobTracker.application.dto.application.CreateApplicationRequest;
+import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationRequest;
 import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationStatusRequest;
 import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryResponse;
 import dev.nicolas.JobTracker.application.usecases.application.create.CreateApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.get.GetApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.history.GetApplicationHistoryUseCase;
+import dev.nicolas.JobTracker.application.usecases.application.update.UpdateApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.update.UpdateApplicationStatusUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -29,15 +31,18 @@ public class ApplicationController {
     private final CreateApplicationUseCase createApplicationUseCase;
     private final GetApplicationUseCase getApplicationUseCase;
     private final GetApplicationHistoryUseCase getApplicationHistoryUseCase;
+    private final UpdateApplicationUseCase updateApplicationUseCase;
     private final UpdateApplicationStatusUseCase updateApplicationStatusUseCase;
 
     public ApplicationController(CreateApplicationUseCase createApplicationUseCase,
                                  GetApplicationUseCase getApplicationUseCase,
                                  GetApplicationHistoryUseCase getApplicationHistoryUseCase,
+                                 UpdateApplicationUseCase updateApplicationUseCase,
                                  UpdateApplicationStatusUseCase updateApplicationStatusUseCase) {
         this.createApplicationUseCase = createApplicationUseCase;
         this.getApplicationUseCase = getApplicationUseCase;
         this.getApplicationHistoryUseCase = getApplicationHistoryUseCase;
+        this.updateApplicationUseCase = updateApplicationUseCase;
         this.updateApplicationStatusUseCase = updateApplicationStatusUseCase;
     }
 
@@ -60,6 +65,12 @@ public class ApplicationController {
     @GetMapping("/{id}/history")
     public ResponseEntity<ApplicationHistoryResponse> getApplicationHistory(@PathVariable UUID id) {
         return ResponseEntity.ok(getApplicationHistoryUseCase.execute(id));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApplicationResponse> updateApplication(@PathVariable UUID id,
+                                                                 @Valid @RequestBody UpdateApplicationRequest request) {
+        return ResponseEntity.ok(updateApplicationUseCase.execute(id, request));
     }
 
     @PatchMapping("/{id}/status")
