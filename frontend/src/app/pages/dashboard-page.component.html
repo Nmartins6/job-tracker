@@ -202,9 +202,12 @@
     <article class="panel stack" style="grid-column: span 4">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Nova candidatura</h2>
+          <h2 class="panel-title">
+            {{ editingApplicationId() ? 'Ajustar candidatura' : 'Nova candidatura' }}
+          </h2>
           <p class="panel-subtitle">
-            Associe a oportunidade ao seu perfil para comecar o acompanhamento.
+            Associe a oportunidade ao seu perfil para comecar o acompanhamento e
+            ajuste os dados quando o processo mudar de rumo.
           </p>
         </div>
       </div>
@@ -231,9 +234,37 @@
           />
         </div>
 
-        <button class="button" type="submit" [disabled]="isCreatingApplication()">
-          {{ isCreatingApplication() ? 'Registrando candidatura...' : 'Registrar candidatura' }}
-        </button>
+        @if (editingApplicationId()) {
+          <div class="field-group">
+            <label for="application-status">Status</label>
+            <select class="select" id="application-status" formControlName="status">
+              @for (status of statusOptions; track status) {
+                <option [value]="status">{{ status }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="button-row">
+          <button class="button" type="submit" [disabled]="isCreatingApplication()">
+            @if (isCreatingApplication()) {
+              {{ editingApplicationId() ? 'Salvando candidatura...' : 'Registrando candidatura...' }}
+            } @else {
+              {{ editingApplicationId() ? 'Salvar ajustes da candidatura' : 'Registrar candidatura' }}
+            }
+          </button>
+
+          @if (editingApplicationId()) {
+            <button
+              class="button button-secondary"
+              type="button"
+              [disabled]="isCreatingApplication()"
+              (click)="cancelApplicationEditing()"
+            >
+              Cancelar edicao
+            </button>
+          }
+        </div>
       </form>
     </article>
 
@@ -473,36 +504,53 @@
     } @else {
       <div class="grid-three">
         @for (application of filteredApplicationCards(); track application.id) {
-          <a class="card-link" [routerLink]="['/applications', application.id]">
-            <article class="panel application-card stack">
+          <article class="panel application-card stack">
+            <div class="split">
+              <span [class]="statusClass(application.status)">
+                {{ application.status }}
+              </span>
+              <span class="muted">{{ application.id.slice(0, 8) }}</span>
+            </div>
+
+            <div>
+              <h3 class="panel-title">{{ application.title }}</h3>
+              <p class="panel-subtitle">{{ application.company }}</p>
+            </div>
+
+            <div class="split muted">
+              <span>{{ application.seniority || 'Senioridade não informada' }}</span>
+              <span>{{ application.location || 'Local não informado' }}</span>
+            </div>
+
+            <div class="list-item">
               <div class="split">
-                <span [class]="statusClass(application.status)">
-                  {{ application.status }}
+                <strong>{{ application.stageAttention.stageName || 'Planejar etapas' }}</strong>
+                <span [class]="stageAttentionClass(application.stageAttention)">
+                  {{ application.stageAttention.urgencyLabel }}
                 </span>
-                <span class="muted">{{ application.id.slice(0, 8) }}</span>
               </div>
+              <p class="muted">{{ application.stageAttention.summary }}</p>
+            </div>
 
-              <div>
-                <h3 class="panel-title">{{ application.title }}</h3>
-                <p class="panel-subtitle">{{ application.company }}</p>
-              </div>
+            <div class="list-item">
+              <strong>{{ application.nextActionTitle }}</strong>
+              <p class="muted">{{ application.nextActionSummary }}</p>
+            </div>
 
-              <div class="split muted">
-                <span>{{ application.seniority || 'Senioridade não informada' }}</span>
-                <span>{{ application.location || 'Local não informado' }}</span>
-              </div>
-
-              <div class="list-item">
-                <div class="split">
-                  <strong>{{ application.stageAttention.stageName || 'Planejar etapas' }}</strong>
-                  <span [class]="stageAttentionClass(application.stageAttention)">
-                    {{ application.stageAttention.urgencyLabel }}
-                  </span>
-                </div>
-                <p class="muted">{{ application.stageAttention.summary }}</p>
-              </div>
-            </article>
-          </a>
+            <div class="button-row">
+              <button
+                class="button button-secondary"
+                type="button"
+                [disabled]="isCreatingApplication()"
+                (click)="editApplication(application)"
+              >
+                Editar candidatura
+              </button>
+              <a class="button button-secondary" [routerLink]="['/applications', application.id]">
+                Abrir detalhe
+              </a>
+            </div>
+          </article>
         }
       </div>
     }
