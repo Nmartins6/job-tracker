@@ -59,6 +59,15 @@ export interface CreateJobRequest {
   description?: string | null;
 }
 
+export interface UpdateJobRequest {
+  company: string;
+  title: string;
+  sourceUrl?: string | null;
+  seniority?: string | null;
+  location?: string | null;
+  description?: string | null;
+}
+
 export interface JobResponse {
   id: UUID;
   company: string;

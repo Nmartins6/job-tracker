@@ -15,6 +15,7 @@ import {
   JobResponse,
   SkillResponse,
   StageResponse,
+  UpdateJobRequest,
   UUID,
   UserSkillResponse,
 } from '../core/api/models';
@@ -71,6 +72,8 @@ export class DashboardPageComponent {
 
   protected readonly isCreatingApplication = signal(false);
 
+  protected readonly editingJobId = signal<UUID | null>(null);
+
   protected readonly errorMessage = signal<string | null>(null);
 
   protected readonly successMessage = signal<string | null>(null);
@@ -90,6 +93,13 @@ export class DashboardPageComponent {
   protected readonly stagesByApplicationId = signal<Record<UUID, StageResponse[]>>({});
 
   protected readonly knownUserId = computed(() => this.auth.knownUserId());
+
+  protected readonly sortedJobs = computed(() =>
+    [...this.jobs()].sort(
+      (left, right) =>
+        left.company.localeCompare(right.company) || left.title.localeCompare(right.title),
+    ),
+  );
 
   protected readonly levelOptions = [1, 2, 3, 4, 5];
 
@@ -319,27 +329,51 @@ export class DashboardPageComponent {
     this.errorMessage.set(null);
     this.successMessage.set(null);
 
-    this.api.createJob(this.createJobForm.getRawValue() as CreateJobRequest).subscribe({
+    const request = this.createJobForm.getRawValue() as CreateJobRequest;
+    const editingJobId = this.editingJobId();
+    const operation$ = editingJobId
+      ? this.api.updateJob(editingJobId, request as UpdateJobRequest)
+      : this.api.createJob(request);
+
+    operation$.subscribe({
       next: (job) => {
         this.isCreatingJob.set(false);
-        this.createJobForm.reset({
-          company: '',
-          title: '',
-          sourceUrl: '',
-          seniority: '',
-          location: '',
-          description: '',
-        });
-        this.successMessage.set(`Vaga "${job.title}" registrada com sucesso.`);
+        this.clearJobEditing();
+        this.successMessage.set(
+          editingJobId
+            ? `Vaga "${job.title}" atualizada com sucesso.`
+            : `Vaga "${job.title}" registrada com sucesso.`,
+        );
         this.loadWorkspace();
       },
       error: (error: unknown) => {
         this.isCreatingJob.set(false);
         this.errorMessage.set(
-          toErrorMessage(error, 'Nao foi possivel registrar a vaga.'),
+          toErrorMessage(
+            error,
+            editingJobId
+              ? 'Nao foi possivel atualizar a vaga.'
+              : 'Nao foi possivel registrar a vaga.',
+          ),
         );
       },
     });
+  }
+
+  protected editJob(job: JobResponse): void {
+    this.editingJobId.set(job.id);
+    this.createJobForm.setValue({
+      company: job.company,
+      title: job.title,
+      sourceUrl: job.sourceUrl ?? '',
+      seniority: job.seniority ?? '',
+      location: job.location ?? '',
+      description: job.description ?? '',
+    });
+  }
+
+  protected cancelJobEditing(): void {
+    this.clearJobEditing();
   }
 
   protected submitApplication(): void {
@@ -454,6 +488,18 @@ export class DashboardPageComponent {
       default:
         return 'tag tag-success';
     }
+  }
+
+  private clearJobEditing(): void {
+    this.editingJobId.set(null);
+    this.createJobForm.reset({
+      company: '',
+      title: '',
+      sourceUrl: '',
+      seniority: '',
+      location: '',
+      description: '',
+    });
   }
 
   private buildStageAttention(stages: StageResponse[]): StageAttention {

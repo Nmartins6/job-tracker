@@ -20,6 +20,7 @@ import {
   StageResponse,
   StartStageRequest,
   UpdateApplicationStatusRequest,
+  UpdateJobRequest,
   UpdateJobRequirementRequest,
   UpdateNoteRequest,
   UpdateStageRequest,
@@ -39,6 +40,10 @@ export class JobTrackerApiService {
 
   createJob(request: CreateJobRequest): Observable<JobResponse> {
     return this.http.post<JobResponse>(`${this.baseUrl}/jobs`, request);
+  }
+
+  updateJob(id: UUID, request: UpdateJobRequest): Observable<JobResponse> {
+    return this.http.patch<JobResponse>(`${this.baseUrl}/jobs/${id}`, request);
   }
 
   getJobRequirementsByJobId(jobId: UUID): Observable<JobRequirementResponse[]> {
