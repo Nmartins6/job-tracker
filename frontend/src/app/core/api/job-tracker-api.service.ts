@@ -48,6 +48,10 @@ export class JobTrackerApiService {
     return this.http.patch<JobResponse>(`${this.baseUrl}/jobs/${id}`, request);
   }
 
+  deleteJob(id: UUID): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/jobs/${id}`);
+  }
+
   getJobRequirementsByJobId(jobId: UUID): Observable<JobRequirementResponse[]> {
     return this.http.get<JobRequirementResponse[]>(
       `${this.baseUrl}/jobs/${jobId}/requirements`,
@@ -142,6 +146,10 @@ export class JobTrackerApiService {
       `${this.baseUrl}/applications/${id}`,
       request,
     );
+  }
+
+  deleteApplication(id: UUID): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/applications/${id}`);
   }
 
   getApplicationHistory(id: UUID): Observable<ApplicationHistoryResponse> {

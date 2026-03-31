@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, forkJoin, map, switchMap } from 'rxjs';
 import { toErrorMessage } from '../core/api/error.utils';
 import { JobTrackerApiService } from '../core/api/job-tracker-api.service';
@@ -41,6 +41,8 @@ export class ApplicationDetailPageComponent {
   private readonly fb = inject(FormBuilder);
 
   private readonly route = inject(ActivatedRoute);
+
+  private readonly router = inject(Router);
 
   private readonly api = inject(JobTrackerApiService);
 
@@ -332,6 +334,39 @@ export class ApplicationDetailPageComponent {
       this.api.updateApplicationStatus(application.id, this.statusForm.getRawValue()),
       'Status da candidatura atualizado.',
     );
+  }
+
+  protected deleteApplication(): void {
+    const application = this.application();
+
+    if (!application) {
+      return;
+    }
+
+    const confirmed = globalThis.confirm(
+      'Remover esta candidatura vai apagar tambem etapas, notas e historico associado. Deseja continuar?',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.api.deleteApplication(application.id).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        void this.router.navigate(['/workspace']);
+      },
+      error: (error: unknown) => {
+        this.isSubmitting.set(false);
+        this.errorMessage.set(
+          toErrorMessage(error, 'Nao foi possivel remover a candidatura.'),
+        );
+      },
+    });
   }
 
   protected submitNote(): void {

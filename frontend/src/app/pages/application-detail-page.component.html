@@ -1,6 +1,16 @@
 <section class="page stack">
   <div class="button-row">
     <a class="button button-secondary" routerLink="/workspace">Voltar ao workspace</a>
+    @if (application()) {
+      <button
+        class="button button-danger"
+        type="button"
+        [disabled]="isSubmitting()"
+        (click)="deleteApplication()"
+      >
+        Excluir candidatura
+      </button>
+    }
   </div>
 
   @if (errorMessage()) {
