@@ -4,11 +4,13 @@ import dev.nicolas.JobTracker.application.dto.job.CreateJobRequest;
 import dev.nicolas.JobTracker.application.dto.job.JobResponse;
 import dev.nicolas.JobTracker.application.dto.job.UpdateJobRequest;
 import dev.nicolas.JobTracker.application.usecases.job.create.CreateJobUseCase;
+import dev.nicolas.JobTracker.application.usecases.job.delete.DeleteJobUseCase;
 import dev.nicolas.JobTracker.application.usecases.job.get.GetJobUseCase;
 import dev.nicolas.JobTracker.application.usecases.job.update.UpdateJobUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,13 +29,16 @@ public class JobController {
     private final CreateJobUseCase createJobUseCase;
     private final GetJobUseCase getJobUseCase;
     private final UpdateJobUseCase updateJobUseCase;
+    private final DeleteJobUseCase deleteJobUseCase;
 
     public JobController(CreateJobUseCase createJobUseCase,
                          GetJobUseCase getJobUseCase,
-                         UpdateJobUseCase updateJobUseCase) {
+                         UpdateJobUseCase updateJobUseCase,
+                         DeleteJobUseCase deleteJobUseCase) {
         this.createJobUseCase = createJobUseCase;
         this.getJobUseCase = getJobUseCase;
         this.updateJobUseCase = updateJobUseCase;
+        this.deleteJobUseCase = deleteJobUseCase;
     }
 
     @PostMapping
@@ -51,5 +56,11 @@ public class JobController {
     public ResponseEntity<JobResponse> updateJob(@PathVariable UUID id,
                                                  @Valid @RequestBody UpdateJobRequest request) {
         return ResponseEntity.ok(updateJobUseCase.execute(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteJob(@PathVariable UUID id) {
+        deleteJobUseCase.execute(id);
+        return ResponseEntity.noContent().build();
     }
 }

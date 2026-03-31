@@ -11,4 +11,8 @@ public interface ApplicationRepository {
     Optional<Application> findById(UUID id);
 
     List<Application> findAll();
+
+    boolean existsByJobId(UUID jobId);
+
+    void deleteById(UUID id);
 }

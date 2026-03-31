@@ -3,6 +3,7 @@ package dev.nicolas.JobTracker.interfaces.rest.job;
 import dev.nicolas.JobTracker.application.dto.job.JobResponse;
 import dev.nicolas.JobTracker.application.dto.job.UpdateJobRequest;
 import dev.nicolas.JobTracker.application.usecases.job.create.CreateJobUseCase;
+import dev.nicolas.JobTracker.application.usecases.job.delete.DeleteJobUseCase;
 import dev.nicolas.JobTracker.application.usecases.job.get.GetJobUseCase;
 import dev.nicolas.JobTracker.application.usecases.job.update.UpdateJobUseCase;
 import dev.nicolas.JobTracker.domain.shared.exception.DomainException;
@@ -21,7 +22,9 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -44,6 +47,9 @@ class JobControllerTest {
 
     @MockitoBean
     private UpdateJobUseCase updateJobUseCase;
+
+    @MockitoBean
+    private DeleteJobUseCase deleteJobUseCase;
 
     @Test
     void shouldCreateJob() throws Exception {
@@ -144,5 +150,15 @@ class JobControllerTest {
                                 """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").value("Domain Error"));
+    }
+
+    @Test
+    void shouldDeleteJob() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doNothing().when(deleteJobUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/jobs/{id}", id))
+                .andExpect(status().isNoContent());
     }
 }

@@ -8,6 +8,7 @@ import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryEventRes
 import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryEventType;
 import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryResponse;
 import dev.nicolas.JobTracker.application.usecases.application.create.CreateApplicationUseCase;
+import dev.nicolas.JobTracker.application.usecases.application.delete.DeleteApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.get.GetApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.history.GetApplicationHistoryUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.update.UpdateApplicationUseCase;
@@ -30,7 +31,9 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -56,6 +59,9 @@ class ApplicationControllerTest {
 
     @MockitoBean
     private GetApplicationHistoryUseCase getApplicationHistoryUseCase;
+
+    @MockitoBean
+    private DeleteApplicationUseCase deleteApplicationUseCase;
 
     @MockitoBean
     private UpdateApplicationUseCase updateApplicationUseCase;
@@ -190,6 +196,16 @@ class ApplicationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jobId").value(jobId.toString()))
                 .andExpect(jsonPath("$.status").value("WITHDRAWN"));
+    }
+
+    @Test
+    void shouldDeleteApplication() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        doNothing().when(deleteApplicationUseCase).execute(id);
+
+        mockMvc.perform(delete("/api/v1/applications/{id}", id))
+                .andExpect(status().isNoContent());
     }
 
     @Test
