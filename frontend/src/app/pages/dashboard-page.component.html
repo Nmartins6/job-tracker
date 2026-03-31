@@ -102,6 +102,37 @@
     </article>
   }
 
+  @if (recentActivityCards().length > 0) {
+    <article class="panel stack">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Movimentacoes recentes</h2>
+          <p class="panel-subtitle">
+            Use este bloco para retomar contexto rapido antes de abrir o detalhe da candidatura.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid-two">
+        @for (application of recentActivityCards(); track application.id) {
+          <a class="card-link" [routerLink]="['/applications', application.id]">
+            <div class="list-item stack">
+              <div class="split">
+                <strong>{{ application.company }} · {{ application.title }}</strong>
+                <span class="muted">
+                  {{ application.latestActivity.happenedAt | date: 'short' }}
+                </span>
+              </div>
+
+              <p class="muted">{{ application.latestActivity.title }}</p>
+              <p>{{ application.latestActivity.summary }}</p>
+            </div>
+          </a>
+        }
+      </div>
+    </article>
+  }
+
   <div class="section-grid">
     <article class="panel stack" style="grid-column: span 4">
       <div class="panel-head">
@@ -581,6 +612,28 @@
               <p class="muted">{{ application.nextActionSummary }}</p>
             </div>
 
+            <div class="list-item">
+              <div class="split">
+                <strong>{{ application.latestActivity.title }}</strong>
+                @if (application.latestActivity.happenedAt) {
+                  <span class="muted">
+                    {{ application.latestActivity.happenedAt | date: 'short' }}
+                  </span>
+                }
+              </div>
+              <p class="muted">{{ application.latestActivity.summary }}</p>
+            </div>
+
+            @if (application.latestNote) {
+              <div class="list-item">
+                <div class="split">
+                  <strong>Ultima nota</strong>
+                  <span class="muted">{{ application.notesCount }} nota(s)</span>
+                </div>
+                <p class="muted">{{ application.latestNotePreview }}</p>
+              </div>
+            }
+
             <div class="button-row">
               <button
                 class="button button-secondary"
@@ -590,10 +643,52 @@
               >
                 Editar candidatura
               </button>
+              <button
+                class="button button-secondary"
+                type="button"
+                [disabled]="isSavingQuickNote()"
+                (click)="startQuickNote(application.id)"
+              >
+                Nota rapida
+              </button>
               <a class="button button-secondary" [routerLink]="['/applications', application.id]">
                 Abrir detalhe
               </a>
             </div>
+
+            @if (quickNoteApplicationId() === application.id) {
+              <form class="list-item stack" [formGroup]="quickNoteForm" (ngSubmit)="submitQuickNote(application)">
+                <div class="split">
+                  <strong>Registrar observacao rapida</strong>
+                  <span class="muted">Vai direto para o historico da candidatura</span>
+                </div>
+
+                <textarea
+                  class="textarea"
+                  rows="3"
+                  formControlName="content"
+                  placeholder="Ex.: recruiter respondeu, entrevista marcada para sexta, pedir retorno em 3 dias..."
+                ></textarea>
+
+                <div class="button-row">
+                  <button class="button" type="submit" [disabled]="isSavingQuickNote()">
+                    @if (isSavingQuickNote()) {
+                      Salvando nota...
+                    } @else {
+                      Salvar nota
+                    }
+                  </button>
+                  <button
+                    class="button button-secondary"
+                    type="button"
+                    [disabled]="isSavingQuickNote()"
+                    (click)="cancelQuickNote()"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            }
           </article>
         }
       </div>
