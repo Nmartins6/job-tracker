@@ -39,4 +39,14 @@ public class ApplicationRepositoryImplement implements ApplicationRepository {
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public boolean existsByJobId(UUID jobId) {
+        return applicationJpaRepository.existsByJobId(jobId);
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        applicationJpaRepository.deleteById(id);
+    }
 }

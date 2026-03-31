@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface ApplicationJpaRepository extends JpaRepository<ApplicationJpaEntity, UUID> {
+
+    boolean existsByJobId(UUID jobId);
 }

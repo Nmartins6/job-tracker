@@ -5,6 +5,7 @@ import dev.nicolas.JobTracker.application.dto.application.CreateApplicationReque
 import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationRequest;
 import dev.nicolas.JobTracker.application.dto.application.UpdateApplicationStatusRequest;
 import dev.nicolas.JobTracker.application.dto.history.ApplicationHistoryResponse;
+import dev.nicolas.JobTracker.application.usecases.application.delete.DeleteApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.create.CreateApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.get.GetApplicationUseCase;
 import dev.nicolas.JobTracker.application.usecases.application.history.GetApplicationHistoryUseCase;
@@ -13,6 +14,7 @@ import dev.nicolas.JobTracker.application.usecases.application.update.UpdateAppl
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,17 +33,20 @@ public class ApplicationController {
     private final CreateApplicationUseCase createApplicationUseCase;
     private final GetApplicationUseCase getApplicationUseCase;
     private final GetApplicationHistoryUseCase getApplicationHistoryUseCase;
+    private final DeleteApplicationUseCase deleteApplicationUseCase;
     private final UpdateApplicationUseCase updateApplicationUseCase;
     private final UpdateApplicationStatusUseCase updateApplicationStatusUseCase;
 
     public ApplicationController(CreateApplicationUseCase createApplicationUseCase,
                                  GetApplicationUseCase getApplicationUseCase,
                                  GetApplicationHistoryUseCase getApplicationHistoryUseCase,
+                                 DeleteApplicationUseCase deleteApplicationUseCase,
                                  UpdateApplicationUseCase updateApplicationUseCase,
                                  UpdateApplicationStatusUseCase updateApplicationStatusUseCase) {
         this.createApplicationUseCase = createApplicationUseCase;
         this.getApplicationUseCase = getApplicationUseCase;
         this.getApplicationHistoryUseCase = getApplicationHistoryUseCase;
+        this.deleteApplicationUseCase = deleteApplicationUseCase;
         this.updateApplicationUseCase = updateApplicationUseCase;
         this.updateApplicationStatusUseCase = updateApplicationStatusUseCase;
     }
@@ -65,6 +70,12 @@ public class ApplicationController {
     @GetMapping("/{id}/history")
     public ResponseEntity<ApplicationHistoryResponse> getApplicationHistory(@PathVariable UUID id) {
         return ResponseEntity.ok(getApplicationHistoryUseCase.execute(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteApplication(@PathVariable UUID id) {
+        deleteApplicationUseCase.execute(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}")

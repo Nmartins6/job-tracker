@@ -183,6 +183,14 @@
                 >
                   Editar
                 </button>
+                <button
+                  class="button button-danger"
+                  type="button"
+                  [disabled]="isCreatingJob()"
+                  (click)="deleteJob(job)"
+                >
+                  Remover
+                </button>
               </div>
               <p class="muted">
                 {{ job.seniority || 'Senioridade nao informada' }} ·

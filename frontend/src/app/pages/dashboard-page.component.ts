@@ -391,6 +391,40 @@ export class DashboardPageComponent {
     this.clearJobEditing();
   }
 
+  protected deleteJob(job: JobResponse): void {
+    const confirmed = globalThis.confirm(
+      `Remover a vaga "${job.title}" em ${job.company}? Essa ação só funciona se não houver candidatura vinculada.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isCreatingJob.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.api.deleteJob(job.id).subscribe({
+      next: () => {
+        this.isCreatingJob.set(false);
+        if (this.editingJobId() === job.id) {
+          this.clearJobEditing();
+        }
+        if (this.createApplicationForm.getRawValue().jobId === job.id) {
+          this.createApplicationForm.patchValue({ jobId: '' });
+        }
+        this.successMessage.set(`Vaga "${job.title}" removida com sucesso.`);
+        this.loadWorkspace();
+      },
+      error: (error: unknown) => {
+        this.isCreatingJob.set(false);
+        this.errorMessage.set(
+          toErrorMessage(error, 'Nao foi possivel remover a vaga.'),
+        );
+      },
+    });
+  }
+
   protected submitApplication(): void {
     if (this.knownUserId()) {
       this.createApplicationForm.patchValue({ userId: this.knownUserId()! });
