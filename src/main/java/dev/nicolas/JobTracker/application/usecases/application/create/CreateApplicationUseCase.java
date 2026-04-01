@@ -35,14 +35,21 @@ public class CreateApplicationUseCase {
             throw new DomainException("Vaga não encontrada pelo id " + request.jobId());
         }
 
-        Application application = Application.create(request.userId(), request.jobId());
+        Application application = Application.create(
+                request.userId(),
+                request.jobId(),
+                request.nextAction(),
+                request.nextActionDueAt()
+        );
         Application saved = applicationRepository.save(application);
 
         return new ApplicationResponse(
                 saved.getId(),
                 saved.getUserId(),
                 saved.getJobId(),
-                saved.getStatus()
+                saved.getStatus(),
+                saved.getNextAction(),
+                saved.getNextActionDueAt()
         );
     }
 }

@@ -40,14 +40,22 @@ public class UpdateApplicationUseCase {
             throw new DomainException("Vaga não encontrada pelo id " + request.jobId());
         }
 
-        application.updateTracking(request.userId(), request.jobId(), request.status());
+        application.updateTracking(
+                request.userId(),
+                request.jobId(),
+                request.status(),
+                request.nextAction(),
+                request.nextActionDueAt()
+        );
         Application saved = applicationRepository.save(application);
 
         return new ApplicationResponse(
                 saved.getId(),
                 saved.getUserId(),
                 saved.getJobId(),
-                saved.getStatus()
+                saved.getStatus(),
+                saved.getNextAction(),
+                saved.getNextActionDueAt()
         );
     }
 }

@@ -46,7 +46,14 @@ class DeleteApplicationUseCaseTest {
         UUID stageId = UUID.randomUUID();
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(
-                Application.reconstitute(applicationId, UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.ACTIVE)
+                Application.reconstitute(
+                        applicationId,
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        ApplicationStatus.ACTIVE,
+                        null,
+                        null
+                )
         ));
         when(noteRepository.findByApplicationId(applicationId)).thenReturn(List.of(
                 Note.reconstitute(noteId, applicationId, stageId, "Observacao", LocalDateTime.now())

@@ -31,7 +31,9 @@ public class UpdateApplicationStatusUseCase {
                 saved.getId(),
                 saved.getUserId(),
                 saved.getJobId(),
-                saved.getStatus()
+                saved.getStatus(),
+                saved.getNextAction(),
+                saved.getNextActionDueAt()
         );
     }
 }

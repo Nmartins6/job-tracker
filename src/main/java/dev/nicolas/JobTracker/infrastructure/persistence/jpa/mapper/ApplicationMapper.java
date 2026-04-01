@@ -13,6 +13,8 @@ public class ApplicationMapper {
                 .userId(application.getUserId())
                 .jobId(application.getJobId())
                 .status(application.getStatus())
+                .nextAction(application.getNextAction())
+                .nextActionDueAt(application.getNextActionDueAt())
                 .build();
     }
 
@@ -21,7 +23,9 @@ public class ApplicationMapper {
                 entity.getId(),
                 entity.getUserId(),
                 entity.getJobId(),
-                entity.getStatus()
+                entity.getStatus(),
+                entity.getNextAction(),
+                entity.getNextActionDueAt()
         );
     }
 }

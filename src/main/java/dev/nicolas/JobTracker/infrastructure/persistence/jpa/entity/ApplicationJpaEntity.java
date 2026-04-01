@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -37,4 +38,10 @@ public class ApplicationJpaEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ApplicationStatus status;
+
+    @Column(name = "next_action")
+    private String nextAction;
+
+    @Column(name = "next_action_due_at")
+    private LocalDateTime nextActionDueAt;
 }

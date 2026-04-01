@@ -47,7 +47,7 @@ class CreateNoteUseCaseTest {
         CreateNoteRequest request = new CreateNoteRequest(applicationId, null, "Observação da candidatura");
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(
-                Application.create(UUID.randomUUID(), UUID.randomUUID())
+                Application.create(UUID.randomUUID(), UUID.randomUUID(), null, null)
         ));
         when(noteRepository.save(any(Note.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -75,7 +75,7 @@ class CreateNoteUseCaseTest {
         CreateNoteRequest request = new CreateNoteRequest(applicationId, stageId, "Feedback da etapa");
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(
-                Application.create(UUID.randomUUID(), UUID.randomUUID())
+                Application.create(UUID.randomUUID(), UUID.randomUUID(), null, null)
         ));
         when(stageRepository.findById(stageId)).thenReturn(Optional.of(
                 Stage.reconstitute(stageId, applicationId, "Screening", 1, null, null, null)
@@ -111,7 +111,7 @@ class CreateNoteUseCaseTest {
         UUID stageId = UUID.randomUUID();
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(
-                Application.create(UUID.randomUUID(), UUID.randomUUID())
+                Application.create(UUID.randomUUID(), UUID.randomUUID(), null, null)
         ));
         when(stageRepository.findById(stageId)).thenReturn(Optional.empty());
 
@@ -131,7 +131,7 @@ class CreateNoteUseCaseTest {
         UUID stageId = UUID.randomUUID();
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(
-                Application.create(UUID.randomUUID(), UUID.randomUUID())
+                Application.create(UUID.randomUUID(), UUID.randomUUID(), null, null)
         ));
         when(stageRepository.findById(stageId)).thenReturn(Optional.of(
                 Stage.reconstitute(stageId, otherApplicationId, "Screening", 1, null, null, null)
