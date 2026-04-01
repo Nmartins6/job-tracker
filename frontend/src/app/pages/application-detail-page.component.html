@@ -71,6 +71,20 @@
           </button>
         </form>
 
+        @if (application()!.nextAction) {
+          <div class="list-item">
+            <div class="split">
+              <strong>Próxima ação registrada</strong>
+              @if (application()!.nextActionDueAt) {
+                <span class="muted">{{ application()!.nextActionDueAt | date: 'short' }}</span>
+              } @else {
+                <span class="muted">Sem data alvo</span>
+              }
+            </div>
+            <p class="muted">{{ application()!.nextAction }}</p>
+          </div>
+        }
+
         @if (matching()) {
           <div class="split">
             <div class="score-ring" [style.--score]="scoreStyle()">

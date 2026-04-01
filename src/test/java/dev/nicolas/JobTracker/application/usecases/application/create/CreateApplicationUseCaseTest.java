@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,7 +47,13 @@ class CreateApplicationUseCaseTest {
     void shouldCreateApplicationWhenUserAndJobExist() {
         UUID userId = UUID.randomUUID();
         UUID jobId = UUID.randomUUID();
-        CreateApplicationRequest request = new CreateApplicationRequest(userId, jobId);
+        LocalDateTime nextActionDueAt = LocalDateTime.of(2026, 4, 2, 10, 0);
+        CreateApplicationRequest request = new CreateApplicationRequest(
+                userId,
+                jobId,
+                "Enviar follow-up",
+                nextActionDueAt
+        );
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(User.create(
                 "Nicolas",
@@ -75,10 +82,14 @@ class CreateApplicationUseCaseTest {
         assertThat(savedApplication.getUserId()).isEqualTo(userId);
         assertThat(savedApplication.getJobId()).isEqualTo(jobId);
         assertThat(savedApplication.getStatus()).isEqualTo(ApplicationStatus.ACTIVE);
+        assertThat(savedApplication.getNextAction()).isEqualTo("Enviar follow-up");
+        assertThat(savedApplication.getNextActionDueAt()).isEqualTo(nextActionDueAt);
 
         assertThat(response.userId()).isEqualTo(userId);
         assertThat(response.jobId()).isEqualTo(jobId);
         assertThat(response.status()).isEqualTo(ApplicationStatus.ACTIVE);
+        assertThat(response.nextAction()).isEqualTo("Enviar follow-up");
+        assertThat(response.nextActionDueAt()).isEqualTo(nextActionDueAt);
     }
 
     @Test
@@ -88,7 +99,7 @@ class CreateApplicationUseCaseTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> createApplicationUseCase.execute(new CreateApplicationRequest(userId, jobId)))
+        assertThatThrownBy(() -> createApplicationUseCase.execute(new CreateApplicationRequest(userId, jobId, null, null)))
                 .isInstanceOf(DomainException.class)
                 .hasMessage("Usuário não encontrado pelo id " + userId);
 
@@ -111,7 +122,7 @@ class CreateApplicationUseCaseTest {
         )));
         when(jobRepository.findById(jobId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> createApplicationUseCase.execute(new CreateApplicationRequest(userId, jobId)))
+        assertThatThrownBy(() -> createApplicationUseCase.execute(new CreateApplicationRequest(userId, jobId, null, null)))
                 .isInstanceOf(DomainException.class)
                 .hasMessage("Vaga não encontrada pelo id " + jobId);
 

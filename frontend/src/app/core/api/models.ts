@@ -126,12 +126,16 @@ export interface JobRequirementResponse {
 export interface CreateApplicationRequest {
   userId: UUID;
   jobId: UUID;
+  nextAction?: string | null;
+  nextActionDueAt?: string | null;
 }
 
 export interface UpdateApplicationRequest {
   userId: UUID;
   jobId: UUID;
   status: ApplicationStatus;
+  nextAction?: string | null;
+  nextActionDueAt?: string | null;
 }
 
 export interface ApplicationResponse {
@@ -139,6 +143,8 @@ export interface ApplicationResponse {
   userId: UUID;
   jobId: UUID;
   status: ApplicationStatus;
+  nextAction: string | null;
+  nextActionDueAt: string | null;
 }
 
 export interface UpdateApplicationStatusRequest {

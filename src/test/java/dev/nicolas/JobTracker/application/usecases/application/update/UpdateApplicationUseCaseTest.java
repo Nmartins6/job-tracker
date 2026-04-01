@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,8 +55,12 @@ class UpdateApplicationUseCaseTest {
                 applicationId,
                 currentUserId,
                 currentJobId,
-                ApplicationStatus.ACTIVE
+                ApplicationStatus.ACTIVE,
+                "Agendar estudo para teste técnico",
+                LocalDateTime.of(2026, 4, 1, 19, 0)
         );
+
+        LocalDateTime nextActionDueAt = LocalDateTime.of(2026, 4, 4, 9, 30);
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
         when(userRepository.findById(newUserId)).thenReturn(Optional.of(User.create(
@@ -79,7 +84,13 @@ class UpdateApplicationUseCaseTest {
 
         ApplicationResponse response = updateApplicationUseCase.execute(
                 applicationId,
-                new UpdateApplicationRequest(newUserId, newJobId, ApplicationStatus.WITHDRAWN)
+                new UpdateApplicationRequest(
+                        newUserId,
+                        newJobId,
+                        ApplicationStatus.WITHDRAWN,
+                        "Cobrar retorno no LinkedIn",
+                        nextActionDueAt
+                )
         );
 
         ArgumentCaptor<Application> applicationCaptor = ArgumentCaptor.forClass(Application.class);
@@ -88,9 +99,13 @@ class UpdateApplicationUseCaseTest {
         assertThat(applicationCaptor.getValue().getUserId()).isEqualTo(newUserId);
         assertThat(applicationCaptor.getValue().getJobId()).isEqualTo(newJobId);
         assertThat(applicationCaptor.getValue().getStatus()).isEqualTo(ApplicationStatus.WITHDRAWN);
+        assertThat(applicationCaptor.getValue().getNextAction()).isEqualTo("Cobrar retorno no LinkedIn");
+        assertThat(applicationCaptor.getValue().getNextActionDueAt()).isEqualTo(nextActionDueAt);
         assertThat(response.userId()).isEqualTo(newUserId);
         assertThat(response.jobId()).isEqualTo(newJobId);
         assertThat(response.status()).isEqualTo(ApplicationStatus.WITHDRAWN);
+        assertThat(response.nextAction()).isEqualTo("Cobrar retorno no LinkedIn");
+        assertThat(response.nextActionDueAt()).isEqualTo(nextActionDueAt);
     }
 
     @Test
@@ -101,7 +116,7 @@ class UpdateApplicationUseCaseTest {
 
         assertThatThrownBy(() -> updateApplicationUseCase.execute(
                 applicationId,
-                new UpdateApplicationRequest(UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.ACTIVE)
+                new UpdateApplicationRequest(UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.ACTIVE, null, null)
         ))
                 .isInstanceOf(DomainException.class)
                 .hasMessage("Candidatura não encontrada pelo id " + applicationId);

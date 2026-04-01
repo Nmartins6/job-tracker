@@ -38,7 +38,9 @@ public class GetApplicationUseCase {
                 application.getId(),
                 application.getUserId(),
                 application.getJobId(),
-                application.getStatus()
+                application.getStatus(),
+                application.getNextAction(),
+                application.getNextActionDueAt()
         );
     }
 }

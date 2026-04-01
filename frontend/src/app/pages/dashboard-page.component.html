@@ -284,6 +284,27 @@
           </div>
         }
 
+        <div class="field-group">
+          <label for="application-next-action">Próxima ação</label>
+          <textarea
+            class="textarea"
+            id="application-next-action"
+            rows="3"
+            formControlName="nextAction"
+            placeholder="Ex.: cobrar retorno da recrutadora, revisar case, confirmar horario da entrevista..."
+          ></textarea>
+        </div>
+
+        <div class="field-group">
+          <label for="application-next-action-due-at">Data da próxima ação</label>
+          <input
+            class="field"
+            id="application-next-action-due-at"
+            type="datetime-local"
+            formControlName="nextActionDueAt"
+          />
+        </div>
+
         <div class="button-row">
           <button class="button" type="submit" [disabled]="isCreatingApplication()">
             @if (isCreatingApplication()) {
@@ -611,6 +632,20 @@
               <strong>{{ application.nextActionTitle }}</strong>
               <p class="muted">{{ application.nextActionSummary }}</p>
             </div>
+
+            @if (application.nextAction) {
+              <div class="list-item">
+                <div class="split">
+                  <strong>Plano manual</strong>
+                  @if (application.nextActionDueAt) {
+                    <span class="muted">{{ application.nextActionDueAt | date: 'short' }}</span>
+                  } @else {
+                    <span class="muted">Sem data</span>
+                  }
+                </div>
+                <p class="muted">{{ application.nextAction }}</p>
+              </div>
+            }
 
             <div class="list-item">
               <div class="split">

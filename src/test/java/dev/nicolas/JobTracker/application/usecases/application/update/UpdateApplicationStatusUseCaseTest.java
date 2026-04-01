@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,7 +40,9 @@ class UpdateApplicationStatusUseCaseTest {
                 id,
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                ApplicationStatus.ACTIVE
+                ApplicationStatus.ACTIVE,
+                "Agendar follow-up",
+                LocalDateTime.of(2026, 4, 2, 11, 0)
         );
 
         when(applicationRepository.findById(id)).thenReturn(Optional.of(application));
@@ -55,6 +58,7 @@ class UpdateApplicationStatusUseCaseTest {
 
         assertThat(applicationCaptor.getValue().getStatus()).isEqualTo(ApplicationStatus.HIRED);
         assertThat(response.status()).isEqualTo(ApplicationStatus.HIRED);
+        assertThat(response.nextAction()).isEqualTo("Agendar follow-up");
     }
 
     @Test

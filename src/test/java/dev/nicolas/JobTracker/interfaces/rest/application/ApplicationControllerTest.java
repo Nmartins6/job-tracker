@@ -25,8 +25,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.util.List;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -76,7 +76,14 @@ class ApplicationControllerTest {
         UUID jobId = UUID.randomUUID();
 
         when(createApplicationUseCase.execute(any())).thenReturn(
-                new ApplicationResponse(id, userId, jobId, ApplicationStatus.ACTIVE)
+                new ApplicationResponse(
+                        id,
+                        userId,
+                        jobId,
+                        ApplicationStatus.ACTIVE,
+                        "Enviar follow-up",
+                        LocalDateTime.of(2026, 4, 2, 10, 0)
+                )
         );
 
         mockMvc.perform(post("/api/v1/applications")
@@ -84,19 +91,22 @@ class ApplicationControllerTest {
                         .content("""
                                 {
                                   "userId": "%s",
-                                  "jobId": "%s"
+                                  "jobId": "%s",
+                                  "nextAction": "Enviar follow-up",
+                                  "nextActionDueAt": "2026-04-02T10:00:00"
                                 }
                                 """.formatted(userId, jobId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.nextAction").value("Enviar follow-up"));
     }
 
     @Test
     void shouldListAllApplications() throws Exception {
         when(getApplicationUseCase.findAll()).thenReturn(List.of(
-                new ApplicationResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.ACTIVE),
-                new ApplicationResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.REJECTED)
+                new ApplicationResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.ACTIVE, null, null),
+                new ApplicationResponse(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), ApplicationStatus.REJECTED, "Registrar feedback", LocalDateTime.of(2026, 4, 3, 18, 0))
         ));
 
         mockMvc.perform(get("/api/v1/applications"))
@@ -113,14 +123,22 @@ class ApplicationControllerTest {
         UUID jobId = UUID.randomUUID();
 
         when(getApplicationUseCase.findById(id)).thenReturn(
-                new ApplicationResponse(id, userId, jobId, ApplicationStatus.ACTIVE)
+                new ApplicationResponse(
+                        id,
+                        userId,
+                        jobId,
+                        ApplicationStatus.ACTIVE,
+                        "Cobrar retorno",
+                        LocalDateTime.of(2026, 4, 4, 9, 0)
+                )
         );
 
         mockMvc.perform(get("/api/v1/applications/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
-                .andExpect(jsonPath("$.jobId").value(jobId.toString()));
+                .andExpect(jsonPath("$.jobId").value(jobId.toString()))
+                .andExpect(jsonPath("$.nextAction").value("Cobrar retorno"));
     }
 
     @Test
@@ -169,7 +187,7 @@ class ApplicationControllerTest {
         UpdateApplicationStatusRequest request = new UpdateApplicationStatusRequest(ApplicationStatus.HIRED);
 
         when(updateApplicationStatusUseCase.execute(eq(id), any(UpdateApplicationStatusRequest.class))).thenReturn(
-                new ApplicationResponse(id, userId, jobId, ApplicationStatus.HIRED)
+                new ApplicationResponse(id, userId, jobId, ApplicationStatus.HIRED, "Fechar ciclo", null)
         );
 
         mockMvc.perform(patch("/api/v1/applications/{id}/status", id)
@@ -184,10 +202,23 @@ class ApplicationControllerTest {
         UUID id = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID jobId = UUID.randomUUID();
-        UpdateApplicationRequest request = new UpdateApplicationRequest(userId, jobId, ApplicationStatus.WITHDRAWN);
+        UpdateApplicationRequest request = new UpdateApplicationRequest(
+                userId,
+                jobId,
+                ApplicationStatus.WITHDRAWN,
+                "Arquivar candidatura",
+                LocalDateTime.of(2026, 4, 5, 12, 0)
+        );
 
         when(updateApplicationUseCase.execute(eq(id), any(UpdateApplicationRequest.class))).thenReturn(
-                new ApplicationResponse(id, userId, jobId, ApplicationStatus.WITHDRAWN)
+                new ApplicationResponse(
+                        id,
+                        userId,
+                        jobId,
+                        ApplicationStatus.WITHDRAWN,
+                        "Arquivar candidatura",
+                        LocalDateTime.of(2026, 4, 5, 12, 0)
+                )
         );
 
         mockMvc.perform(patch("/api/v1/applications/{id}", id)
@@ -195,7 +226,8 @@ class ApplicationControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jobId").value(jobId.toString()))
-                .andExpect(jsonPath("$.status").value("WITHDRAWN"));
+                .andExpect(jsonPath("$.status").value("WITHDRAWN"))
+                .andExpect(jsonPath("$.nextAction").value("Arquivar candidatura"));
     }
 
     @Test

@@ -47,7 +47,14 @@ class GetApplicationHistoryUseCaseTest {
         UUID userId = UUID.randomUUID();
         UUID stageId = UUID.randomUUID();
 
-        Application application = Application.reconstitute(applicationId, userId, jobId, dev.nicolas.JobTracker.domain.application.ApplicationStatus.ACTIVE);
+        Application application = Application.reconstitute(
+                applicationId,
+                userId,
+                jobId,
+                dev.nicolas.JobTracker.domain.application.ApplicationStatus.ACTIVE,
+                null,
+                null
+        );
         Stage stage = Stage.reconstitute(
                 stageId,
                 applicationId,
@@ -107,7 +114,7 @@ class GetApplicationHistoryUseCaseTest {
     @Test
     void shouldReturnEmptyHistoryWhenApplicationHasNoEvents() {
         UUID applicationId = UUID.randomUUID();
-        Application application = Application.create(UUID.randomUUID(), UUID.randomUUID());
+        Application application = Application.create(UUID.randomUUID(), UUID.randomUUID(), null, null);
 
         when(applicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
         when(stageRepository.findByApplicationId(applicationId)).thenReturn(List.of());
