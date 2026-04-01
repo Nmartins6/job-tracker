@@ -161,7 +161,7 @@ export class DashboardPageComponent {
           latestNote: this.getLatestNote(applicationNotes),
           latestNotePreview: this.buildLatestNotePreview(applicationNotes),
           notesCount: applicationNotes.length,
-          ...this.buildNextAction(application.status, stageAttention),
+          ...this.buildNextAction(application, stageAttention),
         };
       })
       .sort((left, right) => this.compareApplications(left, right));
@@ -211,7 +211,11 @@ export class DashboardPageComponent {
   protected readonly priorityApplicationCards = computed(() =>
     this.applicationCards()
       .filter((application) => application.status === 'ACTIVE')
-      .filter((application) => application.stageAttention.urgencyWeight <= 3)
+      .filter(
+        (application) =>
+          application.stageAttention.urgencyWeight <= 3 ||
+          this.manualNextActionUrgencyWeight(application) !== null,
+      )
       .slice(0, 4),
   );
 
@@ -271,6 +275,8 @@ export class DashboardPageComponent {
     userId: [this.knownUserId() ?? '', [Validators.required]],
     jobId: ['', [Validators.required]],
     status: ['ACTIVE' as ApplicationStatus, [Validators.required]],
+    nextAction: ['', [Validators.maxLength(255)]],
+    nextActionDueAt: [''],
   });
 
   protected readonly quickNoteForm = this.fb.nonNullable.group({
@@ -501,10 +507,17 @@ export class DashboardPageComponent {
     this.successMessage.set(null);
 
     const value = this.createApplicationForm.getRawValue();
+    const request = {
+      userId: value.userId,
+      jobId: value.jobId,
+      status: value.status,
+      nextAction: this.normalizeOptionalText(value.nextAction),
+      nextActionDueAt: this.toOptionalDateTime(value.nextActionDueAt),
+    };
     const editingApplicationId = this.editingApplicationId();
     const operation$ = editingApplicationId
-      ? this.api.updateApplication(editingApplicationId, value as UpdateApplicationRequest)
-      : this.api.createApplication(value as CreateApplicationRequest);
+      ? this.api.updateApplication(editingApplicationId, request as UpdateApplicationRequest)
+      : this.api.createApplication(request as CreateApplicationRequest);
 
     operation$.subscribe({
         next: () => {
@@ -537,6 +550,8 @@ export class DashboardPageComponent {
       userId: application.userId,
       jobId: application.jobId,
       status: application.status,
+      nextAction: application.nextAction ?? '',
+      nextActionDueAt: this.toDateTimeLocalValue(application.nextActionDueAt),
     });
   }
 
@@ -729,6 +744,8 @@ export class DashboardPageComponent {
       userId: this.knownUserId() ?? '',
       jobId: '',
       status: 'ACTIVE',
+      nextAction: '',
+      nextActionDueAt: '',
     });
   }
 
@@ -824,9 +841,11 @@ export class DashboardPageComponent {
   }
 
   private buildNextAction(
-    status: ApplicationStatus,
+    application: ApplicationResponse,
     stageAttention: StageAttention,
   ): Pick<ApplicationCard, 'nextActionTitle' | 'nextActionSummary'> {
+    const status = application.status;
+
     if (status === 'HIRED') {
       return {
         nextActionTitle: 'Fechar ciclo',
@@ -848,6 +867,33 @@ export class DashboardPageComponent {
         nextActionTitle: 'Documentar desistência',
         nextActionSummary:
           'Vale registrar por que voce saiu do processo para nao perder contexto depois.',
+        };
+    }
+
+    if (status === 'ACTIVE' && application.nextAction) {
+      const dueAt = application.nextActionDueAt;
+      const dueSummary = dueAt
+        ? `${this.deadlineDistanceLabel(dueAt)} (${this.formatDateTime(dueAt)}).`
+        : 'Sem data definida por enquanto.';
+      const urgencyWeight = this.manualNextActionUrgencyWeight(application);
+
+      if (urgencyWeight === 0) {
+        return {
+          nextActionTitle: 'Próxima ação atrasada',
+          nextActionSummary: `${application.nextAction}. ${dueSummary}`,
+        };
+      }
+
+      if (urgencyWeight === 1) {
+        return {
+          nextActionTitle: 'Próxima ação em foco',
+          nextActionSummary: `${application.nextAction}. ${dueSummary}`,
+        };
+      }
+
+      return {
+        nextActionTitle: 'Próxima ação registrada',
+        nextActionSummary: `${application.nextAction}. ${dueSummary}`,
       };
     }
 
@@ -974,15 +1020,15 @@ export class DashboardPageComponent {
     }
 
     const urgencyDifference =
-      left.stageAttention.urgencyWeight - right.stageAttention.urgencyWeight;
+      this.effectiveUrgencyWeight(left) - this.effectiveUrgencyWeight(right);
 
     if (urgencyDifference !== 0) {
       return urgencyDifference;
     }
 
     const deadlineDifference = this.compareOptionalDates(
-      left.stageAttention.deadlineAt,
-      right.stageAttention.deadlineAt,
+      this.nextRelevantDate(left),
+      this.nextRelevantDate(right),
     );
 
     if (deadlineDifference !== 0) {
@@ -1006,6 +1052,46 @@ export class DashboardPageComponent {
     }
 
     return 0;
+  }
+
+  private effectiveUrgencyWeight(application: ApplicationCard): number {
+    const manualUrgencyWeight = this.manualNextActionUrgencyWeight(application);
+
+    if (manualUrgencyWeight === null) {
+      return application.stageAttention.urgencyWeight;
+    }
+
+    return Math.min(application.stageAttention.urgencyWeight, manualUrgencyWeight);
+  }
+
+  private manualNextActionUrgencyWeight(application: ApplicationResponse): number | null {
+    if (!application.nextAction || !application.nextActionDueAt || application.status !== 'ACTIVE') {
+      return null;
+    }
+
+    const diffHours =
+      (new Date(application.nextActionDueAt).getTime() - Date.now()) / (1000 * 60 * 60);
+
+    if (diffHours < 0) {
+      return 0;
+    }
+
+    if (diffHours <= 72) {
+      return 1;
+    }
+
+    return 4;
+  }
+
+  private nextRelevantDate(application: ApplicationCard): string | null {
+    if (application.nextActionDueAt && application.stageAttention.deadlineAt) {
+      return new Date(application.nextActionDueAt).getTime() <=
+        new Date(application.stageAttention.deadlineAt).getTime()
+        ? application.nextActionDueAt
+        : application.stageAttention.deadlineAt;
+    }
+
+    return application.nextActionDueAt ?? application.stageAttention.deadlineAt;
   }
 
   private deadlineDistanceLabel(deadlineAt: string): string {
@@ -1038,5 +1124,26 @@ export class DashboardPageComponent {
     }
 
     return `${value.slice(0, maxLength).trimEnd()}...`;
+  }
+
+  private normalizeOptionalText(value: string): string | null {
+    const normalizedValue = value.trim();
+    return normalizedValue.length > 0 ? normalizedValue : null;
+  }
+
+  private toOptionalDateTime(value: string): string | null {
+    if (!value) {
+      return null;
+    }
+
+    return value.length === 16 ? `${value}:00` : value;
+  }
+
+  private toDateTimeLocalValue(value: string | null): string {
+    if (!value) {
+      return '';
+    }
+
+    return value.slice(0, 16);
   }
 }
