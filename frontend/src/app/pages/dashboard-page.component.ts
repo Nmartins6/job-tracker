@@ -10,9 +10,11 @@ import {
   ApplicationResponse,
   CreateApplicationRequest,
   CreateJobRequest,
+  CreateNoteRequest,
   CreateSkillRequest,
   CreateUserSkillRequest,
   JobResponse,
+  NoteResponse,
   SkillResponse,
   StageResponse,
   UpdateApplicationRequest,
@@ -42,12 +44,22 @@ interface StageAttention {
   summary: string;
 }
 
+interface LatestActivity {
+  happenedAt: string | null;
+  title: string;
+  summary: string;
+}
+
 interface ApplicationCard extends ApplicationResponse {
   company: string;
   title: string;
   location: string | null;
   seniority: string | null;
   stageAttention: StageAttention;
+  latestActivity: LatestActivity;
+  latestNote: NoteResponse | null;
+  latestNotePreview: string | null;
+  notesCount: number;
   nextActionTitle: string;
   nextActionSummary: string;
 }
@@ -102,6 +114,8 @@ export class DashboardPageComponent {
 
   protected readonly stagesByApplicationId = signal<Record<UUID, StageResponse[]>>({});
 
+  protected readonly notesByApplicationId = signal<Record<UUID, NoteResponse[]>>({});
+
   protected readonly knownUserId = computed(() => this.auth.knownUserId());
 
   protected readonly sortedJobs = computed(() =>
@@ -123,6 +137,7 @@ export class DashboardPageComponent {
   protected readonly applicationCards = computed<ApplicationCard[]>(() => {
     const jobsById = new Map(this.jobs().map((job) => [job.id, job]));
     const stagesByApplicationId = this.stagesByApplicationId();
+    const notesByApplicationId = this.notesByApplicationId();
 
     return this.applications()
       .map((application) => {
@@ -130,6 +145,7 @@ export class DashboardPageComponent {
         const stageAttention = this.buildStageAttention(
           stagesByApplicationId[application.id] ?? [],
         );
+        const applicationNotes = notesByApplicationId[application.id] ?? [];
 
         return {
           ...application,
@@ -138,6 +154,13 @@ export class DashboardPageComponent {
           location: job?.location ?? null,
           seniority: job?.seniority ?? null,
           stageAttention,
+          latestActivity: this.buildLatestActivity(
+            stagesByApplicationId[application.id] ?? [],
+            applicationNotes,
+          ),
+          latestNote: this.getLatestNote(applicationNotes),
+          latestNotePreview: this.buildLatestNotePreview(applicationNotes),
+          notesCount: applicationNotes.length,
           ...this.buildNextAction(application.status, stageAttention),
         };
       })
@@ -192,6 +215,16 @@ export class DashboardPageComponent {
       .slice(0, 4),
   );
 
+  protected readonly recentActivityCards = computed(() =>
+    this.applicationCards()
+      .filter((application) => application.latestActivity.happenedAt !== null)
+      .sort((left, right) =>
+        new Date(right.latestActivity.happenedAt!).getTime() -
+        new Date(left.latestActivity.happenedAt!).getTime(),
+      )
+      .slice(0, 5),
+  );
+
   protected readonly metrics = computed(() => {
     const applications = this.applications();
     const activeApplications = this.applicationCards().filter((item) => item.status === 'ACTIVE');
@@ -240,6 +273,14 @@ export class DashboardPageComponent {
     status: ['ACTIVE' as ApplicationStatus, [Validators.required]],
   });
 
+  protected readonly quickNoteForm = this.fb.nonNullable.group({
+    content: ['', [Validators.required]],
+  });
+
+  protected readonly quickNoteApplicationId = signal<UUID | null>(null);
+
+  protected readonly isSavingQuickNote = signal(false);
+
   constructor() {
     this.loadWorkspace();
   }
@@ -269,13 +310,19 @@ export class DashboardPageComponent {
               applications,
               userSkills,
               stagesByApplicationId: {} as Record<UUID, StageResponse[]>,
+              notesByApplicationId: {} as Record<UUID, NoteResponse[]>,
             });
           }
 
-          return forkJoin(
-            applications.map((application) => this.api.getStagesByApplicationId(application.id)),
-          ).pipe(
-            map((stagesCollection) => ({
+          return forkJoin({
+            stagesCollection: forkJoin(
+              applications.map((application) => this.api.getStagesByApplicationId(application.id)),
+            ),
+            notesCollection: forkJoin(
+              applications.map((application) => this.api.getNotesByApplicationId(application.id)),
+            ),
+          }).pipe(
+            map(({ stagesCollection, notesCollection }) => ({
               jobs,
               skills,
               applications,
@@ -286,17 +333,31 @@ export class DashboardPageComponent {
                   stagesCollection[index],
                 ]),
               ) as Record<UUID, StageResponse[]>,
+              notesByApplicationId: Object.fromEntries(
+                applications.map((application, index) => [
+                  application.id,
+                  notesCollection[index],
+                ]),
+              ) as Record<UUID, NoteResponse[]>,
             })),
           );
         }),
       )
       .subscribe({
-        next: ({ jobs, skills, applications, userSkills, stagesByApplicationId }) => {
+        next: ({
+          jobs,
+          skills,
+          applications,
+          userSkills,
+          stagesByApplicationId,
+          notesByApplicationId,
+        }) => {
           this.jobs.set(jobs);
           this.skills.set(skills);
           this.applications.set(applications);
           this.userSkills.set(userSkills);
           this.stagesByApplicationId.set(stagesByApplicationId);
+          this.notesByApplicationId.set(notesByApplicationId);
           this.isLoading.set(false);
         },
         error: (error: unknown) => {
@@ -481,6 +542,53 @@ export class DashboardPageComponent {
 
   protected cancelApplicationEditing(): void {
     this.clearApplicationEditing();
+  }
+
+  protected startQuickNote(applicationId: UUID): void {
+    this.quickNoteApplicationId.set(applicationId);
+    this.quickNoteForm.reset({
+      content: '',
+    });
+  }
+
+  protected cancelQuickNote(): void {
+    this.quickNoteApplicationId.set(null);
+    this.quickNoteForm.reset({
+      content: '',
+    });
+  }
+
+  protected submitQuickNote(application: ApplicationCard): void {
+    if (this.quickNoteForm.invalid) {
+      this.quickNoteForm.markAllAsTouched();
+      return;
+    }
+
+    this.isSavingQuickNote.set(true);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    const request = {
+      applicationId: application.id,
+      content: this.quickNoteForm.getRawValue().content.trim(),
+    } as CreateNoteRequest;
+
+    this.api.createNote(request).subscribe({
+      next: () => {
+        this.isSavingQuickNote.set(false);
+        this.cancelQuickNote();
+        this.successMessage.set(
+          `Nota rápida registrada em ${application.company} · ${application.title}.`,
+        );
+        this.loadWorkspace();
+      },
+      error: (error: unknown) => {
+        this.isSavingQuickNote.set(false);
+        this.errorMessage.set(
+          toErrorMessage(error, 'Nao foi possivel registrar a nota rápida.'),
+        );
+      },
+    });
   }
 
   protected submitUserSkill(): void {
@@ -783,6 +891,74 @@ export class DashboardPageComponent {
     }
   }
 
+  private buildLatestActivity(
+    stages: StageResponse[],
+    notes: NoteResponse[],
+  ): LatestActivity {
+    const events: LatestActivity[] = [];
+
+    notes.forEach((note) => {
+      events.push({
+        happenedAt: note.createdAt,
+        title: 'Última nota registrada',
+        summary: this.truncateText(note.content, 120),
+      });
+    });
+
+    stages.forEach((stage) => {
+      if (stage.completedAt) {
+        events.push({
+          happenedAt: stage.completedAt,
+          title: 'Etapa concluída',
+          summary: `${stage.name} foi concluida e ja entrou no historico da candidatura.`,
+        });
+      }
+
+      if (stage.startedAt) {
+        events.push({
+          happenedAt: stage.startedAt,
+          title: 'Etapa em andamento',
+          summary: `${stage.name} ja foi iniciada e esta no fluxo ativo da candidatura.`,
+        });
+      }
+    });
+
+    if (events.length === 0) {
+      return {
+        happenedAt: null,
+        title: 'Sem movimentacao recente',
+        summary:
+          'Registre uma nota rápida ou avance uma etapa para manter o contexto desta candidatura.',
+      };
+    }
+
+    return events.sort(
+      (left, right) =>
+        new Date(right.happenedAt!).getTime() - new Date(left.happenedAt!).getTime(),
+    )[0];
+  }
+
+  private getLatestNote(notes: NoteResponse[]): NoteResponse | null {
+    if (notes.length === 0) {
+      return null;
+    }
+
+    return [...notes].sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+    )[0];
+  }
+
+  private buildLatestNotePreview(notes: NoteResponse[]): string | null {
+    const latestNote = this.getLatestNote(notes);
+
+    if (!latestNote) {
+      return null;
+    }
+
+    return this.truncateText(latestNote.content, 140);
+  }
+
   private compareApplications(left: ApplicationCard, right: ApplicationCard): number {
     const statusPriority: Record<ApplicationStatus, number> = {
       ACTIVE: 0,
@@ -854,5 +1030,13 @@ export class DashboardPageComponent {
       dateStyle: 'short',
       timeStyle: 'short',
     }).format(new Date(dateTime));
+  }
+
+  private truncateText(value: string, maxLength: number): string {
+    if (value.length <= maxLength) {
+      return value;
+    }
+
+    return `${value.slice(0, maxLength).trimEnd()}...`;
   }
 }
