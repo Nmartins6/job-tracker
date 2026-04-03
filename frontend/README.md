@@ -36,6 +36,23 @@ sem depender apenas de requests manuais.
 
 ## Rodando localmente
 
+Opcao mais simples na raiz do projeto:
+
+```bash
+docker compose up --build
+```
+
+Depois abra:
+
+```text
+http://localhost:4200
+```
+
+Nesse modo, o frontend sobe no proprio compose e usa `proxy.docker.conf.json`
+para encaminhar `/api` e `/actuator` para o servico `app`.
+
+Se preferir rodar so o frontend fora do Docker:
+
 Instale as dependencias:
 
 ```bash
