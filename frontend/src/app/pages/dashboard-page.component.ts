@@ -45,6 +45,7 @@ interface StageAttention {
   stageName: string | null;
   orderIndex: number | null;
   deadlineAt: string | null;
+  quickAction: 'start' | 'complete' | null;
   urgency: StageAttentionUrgency;
   urgencyLabel: string;
   urgencyWeight: number;
@@ -103,6 +104,8 @@ export class DashboardPageComponent {
   protected readonly editingUserSkillId = signal<UUID | null>(null);
 
   protected readonly isSavingUserSkill = signal(false);
+
+  protected readonly operatingApplicationId = signal<UUID | null>(null);
 
   protected readonly errorMessage = signal<string | null>(null);
 
@@ -611,6 +614,158 @@ export class DashboardPageComponent {
     });
   }
 
+  protected hasQuickStageAction(application: ApplicationCard): boolean {
+    return application.status === 'ACTIVE' && application.stageAttention.quickAction !== null;
+  }
+
+  protected quickStageActionLabel(application: ApplicationCard): string {
+    return application.stageAttention.quickAction === 'complete'
+      ? 'Concluir etapa'
+      : 'Iniciar etapa';
+  }
+
+  protected runQuickStageAction(application: ApplicationCard): void {
+    const { quickAction, stageId, stageName } = application.stageAttention;
+
+    if (application.status !== 'ACTIVE' || !stageId || !quickAction) {
+      return;
+    }
+
+    this.operatingApplicationId.set(application.id);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    const operation$ =
+      quickAction === 'complete'
+        ? this.api.completeStage(stageId, {
+            completedAt: this.currentLocalDateTime(),
+          })
+        : this.api.startStage(stageId, {
+            startedAt: this.currentLocalDateTime(),
+          });
+
+    operation$.subscribe({
+      next: () => {
+        this.operatingApplicationId.set(null);
+        this.successMessage.set(
+          quickAction === 'complete'
+            ? `Etapa "${stageName}" concluida em ${application.company} · ${application.title}.`
+            : `Etapa "${stageName}" iniciada em ${application.company} · ${application.title}.`,
+        );
+        this.loadWorkspace();
+      },
+      error: (error: unknown) => {
+        this.operatingApplicationId.set(null);
+        this.errorMessage.set(
+          toErrorMessage(
+            error,
+            quickAction === 'complete'
+              ? 'Nao foi possivel concluir a etapa agora.'
+              : 'Nao foi possivel iniciar a etapa agora.',
+          ),
+        );
+      },
+    });
+  }
+
+  protected canClearManualNextAction(application: ApplicationCard): boolean {
+    return application.status === 'ACTIVE' && !!application.nextAction;
+  }
+
+  protected canQuickUpdateStatus(application: ApplicationCard): boolean {
+    return application.status === 'ACTIVE' || application.status === 'WITHDRAWN';
+  }
+
+  protected quickStatusOptions(application: ApplicationCard): ApplicationStatus[] {
+    if (application.status === 'ACTIVE') {
+      return ['HIRED', 'REJECTED', 'WITHDRAWN'];
+    }
+
+    if (application.status === 'WITHDRAWN') {
+      return ['ACTIVE'];
+    }
+
+    return [];
+  }
+
+  protected quickStatusLabel(status: ApplicationStatus): string {
+    switch (status) {
+      case 'HIRED':
+        return 'Marcar contratada';
+      case 'REJECTED':
+        return 'Marcar rejeitada';
+      case 'WITHDRAWN':
+        return 'Registrar desistência';
+      case 'ACTIVE':
+        return 'Reativar';
+    }
+  }
+
+  protected updateApplicationStatusQuickly(
+    application: ApplicationCard,
+    status: ApplicationStatus,
+  ): void {
+    if (application.status === status) {
+      return;
+    }
+
+    this.operatingApplicationId.set(application.id);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.api
+      .updateApplicationStatus(application.id, { status })
+      .subscribe({
+        next: () => {
+          this.operatingApplicationId.set(null);
+          this.successMessage.set(
+            `Candidatura em ${application.company} · ${application.title} atualizada para ${status}.`,
+          );
+          this.loadWorkspace();
+        },
+        error: (error: unknown) => {
+          this.operatingApplicationId.set(null);
+          this.errorMessage.set(
+            toErrorMessage(error, 'Nao foi possivel atualizar o status da candidatura.'),
+          );
+        },
+      });
+  }
+
+  protected clearManualNextAction(application: ApplicationCard): void {
+    if (!this.canClearManualNextAction(application)) {
+      return;
+    }
+
+    this.operatingApplicationId.set(application.id);
+    this.errorMessage.set(null);
+    this.successMessage.set(null);
+
+    this.api
+      .updateApplication(application.id, {
+        userId: application.userId,
+        jobId: application.jobId,
+        status: application.status,
+        nextAction: null,
+        nextActionDueAt: null,
+      })
+      .subscribe({
+        next: () => {
+          this.operatingApplicationId.set(null);
+          this.successMessage.set(
+            `Próxima ação removida de ${application.company} · ${application.title}.`,
+          );
+          this.loadWorkspace();
+        },
+        error: (error: unknown) => {
+          this.operatingApplicationId.set(null);
+          this.errorMessage.set(
+            toErrorMessage(error, 'Nao foi possivel limpar a próxima ação agora.'),
+          );
+        },
+      });
+  }
+
   protected submitQuickNote(application: ApplicationCard): void {
     if (this.quickNoteForm.invalid) {
       this.quickNoteForm.markAllAsTouched();
@@ -812,6 +967,7 @@ export class DashboardPageComponent {
         stageName: null,
         orderIndex: null,
         deadlineAt: null,
+        quickAction: null,
         urgency: stages.length === 0 ? 'unscheduled' : 'idle',
         urgencyLabel: stages.length === 0 ? 'Planejar etapas' : 'Fluxo concluido',
         urgencyWeight: stages.length === 0 ? 2 : 5,
@@ -830,6 +986,7 @@ export class DashboardPageComponent {
         stageName: nextStage.name,
         orderIndex: nextStage.orderIndex,
         deadlineAt: null,
+        quickAction: nextStage.startedAt ? 'complete' : 'start',
         urgency: nextStage.startedAt ? 'started' : 'unscheduled',
         urgencyLabel: nextStage.startedAt ? 'Em andamento' : 'Sem prazo',
         urgencyWeight: nextStage.startedAt ? 3 : 2,
@@ -851,6 +1008,7 @@ export class DashboardPageComponent {
         stageName: nextStage.name,
         orderIndex: nextStage.orderIndex,
         deadlineAt,
+        quickAction: nextStage.startedAt ? 'complete' : 'start',
         urgency: 'overdue',
         urgencyLabel: 'Prazo vencido',
         urgencyWeight: 0,
@@ -864,6 +1022,7 @@ export class DashboardPageComponent {
         stageName: nextStage.name,
         orderIndex: nextStage.orderIndex,
         deadlineAt,
+        quickAction: nextStage.startedAt ? 'complete' : 'start',
         urgency: 'soon',
         urgencyLabel: 'Ate 3 dias',
         urgencyWeight: 1,
@@ -876,6 +1035,7 @@ export class DashboardPageComponent {
       stageName: nextStage.name,
       orderIndex: nextStage.orderIndex,
       deadlineAt,
+      quickAction: nextStage.startedAt ? 'complete' : 'start',
       urgency: 'upcoming',
       urgencyLabel: 'No radar',
       urgencyWeight: 4,
@@ -1229,5 +1389,21 @@ export class DashboardPageComponent {
     }
 
     return value.slice(0, 16);
+  }
+
+  private currentLocalDateTime(): string {
+    const now = new Date();
+    const parts = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ];
+    const time = [
+      String(now.getHours()).padStart(2, '0'),
+      String(now.getMinutes()).padStart(2, '0'),
+      String(now.getSeconds()).padStart(2, '0'),
+    ];
+
+    return `${parts[0]}-${parts[1]}-${parts[2]}T${time[0]}:${time[1]}:${time[2]}`;
   }
 }

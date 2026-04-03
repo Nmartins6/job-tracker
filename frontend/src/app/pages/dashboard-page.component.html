@@ -696,6 +696,69 @@
               </div>
             }
 
+            @if (application.status === 'ACTIVE' && (hasQuickStageAction(application) || canClearManualNextAction(application))) {
+              <div class="list-item stack">
+                <div class="split">
+                  <strong>Acoes rapidas</strong>
+                  <span class="muted">Atualize o fluxo sem sair do painel</span>
+                </div>
+
+                <div class="button-row">
+                  @if (hasQuickStageAction(application)) {
+                    <button
+                      class="button"
+                      type="button"
+                      [disabled]="operatingApplicationId() === application.id"
+                      (click)="runQuickStageAction(application)"
+                    >
+                      @if (operatingApplicationId() === application.id) {
+                        Salvando...
+                      } @else {
+                        {{ quickStageActionLabel(application) }}
+                      }
+                    </button>
+                  }
+
+                  @if (canClearManualNextAction(application)) {
+                    <button
+                      class="button button-secondary"
+                      type="button"
+                      [disabled]="operatingApplicationId() === application.id"
+                      (click)="clearManualNextAction(application)"
+                    >
+                      Limpar proxima acao
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (canQuickUpdateStatus(application)) {
+              <div class="list-item stack">
+                <div class="split">
+                  <strong>Fechar ou retomar ciclo</strong>
+                  <span class="muted">Ajuste o status sem abrir o detalhe</span>
+                </div>
+
+                <div class="button-row">
+                  @for (status of quickStatusOptions(application); track status) {
+                    <button
+                      class="button button-secondary"
+                      type="button"
+                      [disabled]="operatingApplicationId() === application.id"
+                      (click)="updateApplicationStatusQuickly(application, status)"
+                    >
+                      @if (operatingApplicationId() === application.id) {
+                        Salvando...
+                      } @else {
+                        {{ quickStatusLabel(status) }}
+                      }
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+
             <div class="list-item">
               <div class="split">
                 <strong>{{ application.latestActivity.title }}</strong>
@@ -730,7 +793,7 @@
               <button
                 class="button button-secondary"
                 type="button"
-                [disabled]="isSavingQuickNote()"
+                [disabled]="isSavingQuickNote() || operatingApplicationId() === application.id"
                 (click)="startQuickNote(application.id)"
               >
                 Nota rapida
