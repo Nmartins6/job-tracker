@@ -121,8 +121,11 @@ npm run build
 Testes do frontend:
 
 ```bash
-CHROME_BIN=$(which google-chrome || which chromium || which chromium-browser) npm test -- --watch=false --browsers=ChromeHeadless
+npm test
 ```
+
+O script usa `ChromeHeadlessNoSandbox`, que se mostrou mais estavel para a
+validacao local e no CI.
 
 ### Fluxo local completo
 
@@ -154,6 +157,13 @@ Fluxo sugerido para primeira execucao:
 4. vincular suas principais skills ao perfil
 5. criar uma candidatura
 6. abrir o detalhe da candidatura e explorar etapas, notas, requisitos e matching
+
+Tambem da para usar o proprio dashboard como central operacional para:
+
+- registrar nota rapida
+- iniciar ou concluir a proxima etapa
+- limpar a proxima acao manual
+- encerrar ou reativar candidaturas sem abrir o detalhe
 
 ## Perfis de configuracao
 

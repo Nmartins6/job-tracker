@@ -12,7 +12,13 @@ sem depender apenas de requests manuais.
   - vincular skills ao perfil do usuario
   - criar candidaturas
 - lista de candidaturas com filtros por empresa e status
-- painel com leitura de prioridades baseada em etapas e prazos
+- painel com leitura de prioridades baseada em etapas, prazos e proximas acoes
+- fila de triagem com atalhos para candidaturas que pedem atencao agora
+- acoes rapidas no dashboard para:
+  - registrar nota rapida
+  - iniciar ou concluir etapa
+  - limpar proxima acao manual
+  - encerrar ou reativar candidatura
 - detalhe de candidatura com:
   - status macro
   - requisitos da vaga
@@ -20,7 +26,7 @@ sem depender apenas de requests manuais.
   - notas
   - historico consolidado
   - leitura de matching
-  - remocao de requisito, nota e etapa
+  - edicao e remocao de requisito, nota e etapa
 
 ## Requisitos
 
@@ -68,5 +74,8 @@ npm run build
 ## Testes
 
 ```bash
-CHROME_BIN=$(which google-chrome || which chromium || which chromium-browser) npm test -- --watch=false --browsers=ChromeHeadless
+npm test
 ```
+
+O script usa `ChromeHeadlessNoSandbox`, que ficou mais estavel para execucao
+local e no GitHub Actions.
