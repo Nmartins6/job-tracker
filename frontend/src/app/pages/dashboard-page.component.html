@@ -64,6 +64,55 @@
     </div>
   }
 
+  <article class="panel stack">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Fila de triagem</h2>
+        <p class="panel-subtitle">
+          Use estes atalhos para decidir rapidamente quais candidaturas pedem ação hoje.
+        </p>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button
+        type="button"
+        [class]="triageView() === 'all' ? 'button' : 'button button-secondary'"
+        (click)="updateTriageView('all')"
+      >
+        Todas
+      </button>
+      <button
+        type="button"
+        [class]="triageView() === 'attention' ? 'button' : 'button button-secondary'"
+        (click)="updateTriageView('attention')"
+      >
+        Atenção hoje ({{ triageCounts().attention }})
+      </button>
+      <button
+        type="button"
+        [class]="triageView() === 'missing-next-action' ? 'button' : 'button button-secondary'"
+        (click)="updateTriageView('missing-next-action')"
+      >
+        Sem próxima ação ({{ triageCounts().missingNextAction }})
+      </button>
+      <button
+        type="button"
+        [class]="triageView() === 'missing-stages' ? 'button' : 'button button-secondary'"
+        (click)="updateTriageView('missing-stages')"
+      >
+        Sem etapas ({{ triageCounts().missingStages }})
+      </button>
+      <button
+        type="button"
+        [class]="triageView() === 'stalled' ? 'button' : 'button button-secondary'"
+        (click)="updateTriageView('stalled')"
+      >
+        Paradas ({{ triageCounts().stalled }})
+      </button>
+    </div>
+  </article>
+
   @if (priorityApplicationCards().length > 0) {
     <article class="panel stack">
       <div class="panel-head">
