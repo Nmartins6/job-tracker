@@ -33,6 +33,13 @@ type StageAttentionUrgency =
   | 'upcoming'
   | 'idle';
 
+type DashboardTriageView =
+  | 'all'
+  | 'attention'
+  | 'missing-next-action'
+  | 'missing-stages'
+  | 'stalled';
+
 interface StageAttention {
   stageId: UUID | null;
   stageName: string | null;
@@ -56,6 +63,7 @@ interface ApplicationCard extends ApplicationResponse {
   location: string | null;
   seniority: string | null;
   stageAttention: StageAttention;
+  stagesCount: number;
   latestActivity: LatestActivity;
   latestNote: NoteResponse | null;
   latestNotePreview: string | null;
@@ -104,6 +112,8 @@ export class DashboardPageComponent {
 
   protected readonly statusFilter = signal<ApplicationStatus | ''>('');
 
+  protected readonly triageView = signal<DashboardTriageView>('all');
+
   protected readonly jobs = signal<JobResponse[]>([]);
 
   protected readonly skills = signal<SkillResponse[]>([]);
@@ -145,6 +155,7 @@ export class DashboardPageComponent {
         const stageAttention = this.buildStageAttention(
           stagesByApplicationId[application.id] ?? [],
         );
+        const applicationStages = stagesByApplicationId[application.id] ?? [];
         const applicationNotes = notesByApplicationId[application.id] ?? [];
 
         return {
@@ -154,8 +165,9 @@ export class DashboardPageComponent {
           location: job?.location ?? null,
           seniority: job?.seniority ?? null,
           stageAttention,
+          stagesCount: applicationStages.length,
           latestActivity: this.buildLatestActivity(
-            stagesByApplicationId[application.id] ?? [],
+            applicationStages,
             applicationNotes,
           ),
           latestNote: this.getLatestNote(applicationNotes),
@@ -192,6 +204,7 @@ export class DashboardPageComponent {
   protected readonly filteredApplicationCards = computed(() => {
     const companyFilter = this.companyFilter().trim().toLowerCase();
     const statusFilter = this.statusFilter();
+    const triageView = this.triageView();
 
     return this.applicationCards().filter((application) => {
       const companyMatches = !companyFilter
@@ -199,13 +212,17 @@ export class DashboardPageComponent {
         : application.company.trim().toLowerCase() === companyFilter;
 
       const statusMatches = !statusFilter ? true : application.status === statusFilter;
+      const triageMatches = this.matchesTriageView(application, triageView);
 
-      return companyMatches && statusMatches;
+      return companyMatches && statusMatches && triageMatches;
     });
   });
 
   protected readonly hasActiveFilters = computed(
-    () => this.companyFilter().length > 0 || this.statusFilter().length > 0,
+    () =>
+      this.companyFilter().length > 0 ||
+      this.statusFilter().length > 0 ||
+      this.triageView() !== 'all',
   );
 
   protected readonly priorityApplicationCards = computed(() =>
@@ -228,6 +245,27 @@ export class DashboardPageComponent {
       )
       .slice(0, 5),
   );
+
+  protected readonly triageCounts = computed(() => {
+    const activeApplications = this.applicationCards().filter(
+      (application) => application.status === 'ACTIVE',
+    );
+
+    return {
+      attention: activeApplications.filter((application) =>
+        this.matchesTriageView(application, 'attention'),
+      ).length,
+      missingNextAction: activeApplications.filter((application) =>
+        this.matchesTriageView(application, 'missing-next-action'),
+      ).length,
+      missingStages: activeApplications.filter((application) =>
+        this.matchesTriageView(application, 'missing-stages'),
+      ).length,
+      stalled: activeApplications.filter((application) =>
+        this.matchesTriageView(application, 'stalled'),
+      ).length,
+    };
+  });
 
   protected readonly metrics = computed(() => {
     const applications = this.applications();
@@ -709,9 +747,14 @@ export class DashboardPageComponent {
     this.statusFilter.set((value as ApplicationStatus | '') ?? '');
   }
 
+  protected updateTriageView(value: DashboardTriageView): void {
+    this.triageView.set(value);
+  }
+
   protected clearFilters(): void {
     this.companyFilter.set('');
     this.statusFilter.set('');
+    this.triageView.set('all');
   }
 
   protected stageAttentionClass(attention: StageAttention): string {
@@ -1081,6 +1124,47 @@ export class DashboardPageComponent {
     }
 
     return 4;
+  }
+
+  private matchesTriageView(
+    application: ApplicationCard,
+    triageView: DashboardTriageView,
+  ): boolean {
+    if (triageView === 'all') {
+      return true;
+    }
+
+    if (application.status !== 'ACTIVE') {
+      return false;
+    }
+
+    switch (triageView) {
+      case 'attention':
+        return (
+          this.effectiveUrgencyWeight(application) <= 2 ||
+          this.manualNextActionUrgencyWeight(application) === 0
+        );
+      case 'missing-next-action':
+        return !application.nextAction;
+      case 'missing-stages':
+        return application.stagesCount === 0;
+      case 'stalled':
+        return this.isStalled(application);
+      default:
+        return true;
+    }
+  }
+
+  private isStalled(application: ApplicationCard): boolean {
+    if (application.latestActivity.happenedAt === null) {
+      return true;
+    }
+
+    const diffDays =
+      (Date.now() - new Date(application.latestActivity.happenedAt).getTime()) /
+      (1000 * 60 * 60 * 24);
+
+    return diffDays >= 7;
   }
 
   private nextRelevantDate(application: ApplicationCard): string | null {
