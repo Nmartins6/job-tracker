@@ -78,6 +78,19 @@ interface UserSkillCard extends UserSkillResponse {
   skillCategory: string | null;
 }
 
+interface WorkspaceChecklistStep {
+  id:
+    | 'account'
+    | 'skill-catalog'
+    | 'user-profile'
+    | 'jobs'
+    | 'applications'
+    | 'follow-up';
+  title: string;
+  summary: string;
+  done: boolean;
+}
+
 @Component({
   selector: 'app-dashboard-page',
   standalone: true,
@@ -289,6 +302,88 @@ export class DashboardPageComponent {
       pendingPlanning: activeApplications.filter(
         (item) => item.stageAttention.urgency === 'unscheduled',
       ).length,
+    };
+  });
+
+  protected readonly workspaceChecklist = computed<WorkspaceChecklistStep[]>(() => {
+    const jobs = this.jobs();
+    const skills = this.skills();
+    const userSkills = this.userSkills();
+    const applicationCards = this.applicationCards();
+    const followUpReadyCount = applicationCards.filter(
+      (application) =>
+        application.nextAction !== null ||
+        application.notesCount > 0 ||
+        application.stagesCount > 0,
+    ).length;
+
+    return [
+      {
+        id: 'account',
+        title: 'Perfil conectado',
+        summary: this.knownUserId()
+          ? `Sessao reconhecida como ${this.auth.displayName()}.`
+          : 'Entre com sua conta para vincular candidaturas e skills ao seu perfil.',
+        done: !!this.knownUserId(),
+      },
+      {
+        id: 'skill-catalog',
+        title: 'Catálogo de skills montado',
+        summary:
+          skills.length > 0
+            ? `${skills.length} skill(s) cadastradas para reutilizar no perfil e nas vagas.`
+            : 'Cadastre as tecnologias que voce quer rastrear no produto.',
+        done: skills.length > 0,
+      },
+      {
+        id: 'user-profile',
+        title: 'Perfil técnico preenchido',
+        summary:
+          userSkills.length > 0
+            ? `${userSkills.length} skill(s) vinculadas ao seu perfil tecnico.`
+            : 'Vincule suas skills com nivel e experiencia para destravar o matching.',
+        done: userSkills.length > 0,
+      },
+      {
+        id: 'jobs',
+        title: 'Vagas mapeadas',
+        summary:
+          jobs.length > 0
+            ? `${jobs.length} vaga(s) ja estao prontas para gerar candidaturas.`
+            : 'Mapeie a primeira oportunidade que voce quer acompanhar aqui.',
+        done: jobs.length > 0,
+      },
+      {
+        id: 'applications',
+        title: 'Candidaturas abertas',
+        summary:
+          applicationCards.length > 0
+            ? `${applicationCards.length} candidatura(s) registradas no seu workspace.`
+            : 'Abra pelo menos uma candidatura para comecar a acompanhar o fluxo real.',
+        done: applicationCards.length > 0,
+      },
+      {
+        id: 'follow-up',
+        title: 'Acompanhamento com contexto',
+        summary:
+          followUpReadyCount > 0
+            ? `${followUpReadyCount} candidatura(s) ja possuem nota, etapa ou proxima acao.`
+            : 'Registre nota, etapa ou proxima acao para transformar o painel em rotina diaria.',
+        done: followUpReadyCount > 0,
+      },
+    ];
+  });
+
+  protected readonly workspaceChecklistProgress = computed(() => {
+    const steps = this.workspaceChecklist();
+    const completed = steps.filter((step) => step.done).length;
+    const nextPending = steps.find((step) => !step.done) ?? null;
+
+    return {
+      completed,
+      total: steps.length,
+      percentage: Math.round((completed / steps.length) * 100),
+      nextPending,
     };
   });
 

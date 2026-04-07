@@ -380,30 +380,41 @@
     <article class="panel stack" style="grid-column: span 4">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Fluxo sugerido</h2>
+          <h2 class="panel-title">Checklist do workspace</h2>
           <p class="panel-subtitle">
-            Um jeito simples de usar o sistema no dia a dia.
+            Use este bloco para ver o que ja esta pronto e qual passo ainda falta para o fluxo ficar redondo.
           </p>
         </div>
       </div>
 
+      <div class="list-item">
+        <div class="split">
+          <strong>{{ workspaceChecklistProgress().completed }} de {{ workspaceChecklistProgress().total }} passos concluidos</strong>
+          <span class="muted">{{ workspaceChecklistProgress().percentage }}%</span>
+        </div>
+        @if (workspaceChecklistProgress().nextPending; as nextPending) {
+          <p class="muted">
+            Próximo foco: <strong>{{ nextPending.title }}</strong>. {{ nextPending.summary }}
+          </p>
+        } @else {
+          <p class="muted">
+            Seu workspace ja tem a base essencial para acompanhar candidaturas no dia a dia.
+          </p>
+        }
+      </div>
+
       <div class="list">
-        <div class="list-item">
-          <strong>1. Mapeie a vaga</strong>
-          <p class="muted">Cadastre empresa, titulo, senioridade e link da oportunidade.</p>
-        </div>
-        <div class="list-item">
-          <strong>2. Abra a candidatura</strong>
-          <p class="muted">Crie a candidatura vinculada ao seu perfil para comecar o acompanhamento.</p>
-        </div>
-        <div class="list-item">
-          <strong>3. Registre o andamento</strong>
-          <p class="muted">No detalhe, voce pode atualizar status, etapas, prazos e feedbacks.</p>
-        </div>
-        <div class="list-item">
-          <strong>4. Consulte a aderencia</strong>
-          <p class="muted">A analise aparece quando seu perfil e a vaga ja tiverem skills e requisitos cadastrados.</p>
-        </div>
+        @for (step of workspaceChecklist(); track step.id) {
+          <div class="list-item">
+            <div class="split">
+              <strong>{{ step.title }}</strong>
+              <span [class]="step.done ? 'tag tag-success' : 'tag tag-warning'">
+                {{ step.done ? 'Concluido' : 'Pendente' }}
+              </span>
+            </div>
+            <p class="muted">{{ step.summary }}</p>
+          </div>
+        }
       </div>
     </article>
   </div>
