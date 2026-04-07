@@ -76,8 +76,14 @@ Executar a aplicacao com Docker Compose:
 docker compose up --build
 ```
 
-Esse fluxo sobe o backend e o banco local. O frontend Angular continua sendo
-executado separadamente em `frontend/`.
+Esse fluxo sobe:
+
+- PostgreSQL
+- backend Spring Boot
+- frontend Angular em `http://localhost:4200`
+
+Na primeira execucao, o frontend pode demorar um pouco mais porque instala as
+dependencias dentro do container antes de subir o `ng serve`.
 
 Executar os testes:
 
@@ -129,7 +135,17 @@ validacao local e no CI.
 
 ### Fluxo local completo
 
-Em dois terminais:
+Opcao mais simples, com um comando so:
+
+```bash
+docker compose up --build
+```
+
+Depois abra:
+
+- `http://localhost:4200`
+
+Opcao alternativa, se quiser rodar sem Docker:
 
 Terminal 1:
 
@@ -144,10 +160,6 @@ cd frontend
 npm install
 npm start
 ```
-
-Depois abra:
-
-- `http://localhost:4200`
 
 Fluxo sugerido para primeira execucao:
 
